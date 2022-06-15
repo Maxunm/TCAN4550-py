@@ -1,6 +1,7 @@
 import ctypes
 uint8_t = ctypes.c_uint8
 uint32_t = ctypes.c_uint32
+import spidev
 
 class TCAN4550:
 
