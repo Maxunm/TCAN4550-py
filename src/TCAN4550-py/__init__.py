@@ -5,14 +5,21 @@ uint32_t = ctypes.c_uint32
 class TCAN4550:
 
     def __init__(self) -> None:
+
+        self.dev_ie = TCAN4550_device_interrupt_enable()
+        self.dev_ie = 0x0
         # Begin by clearing any potential SPI errors
         self.TCAN_clearSPIerr()
+
+        self.TCAN_configure_interrupt_enable(self.dev_ie)
 
 
     def TCAN_clearSPIerr(self) -> None:
         pass
     
-    def TCAN_configure_interrupt_enable(self) -> int
+    def TCAN_configure_interrupt_enable(self, ie) -> bool:
+        return True
+
 
 
 
