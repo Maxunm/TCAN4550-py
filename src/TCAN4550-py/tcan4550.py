@@ -5,20 +5,52 @@ import spidev
 
 class TCAN4550:
 
-    def __init__(self) -> None:
+    def __init__(self, bus:int, device:int) -> None:
+        
+        # SPI initialization
+        self.spi = spidev.SpiDev(bus, device)
+        self.spi.max_speed_hz = 2000000
+        self.spi.lsbfirst = False
+        self.spi.mode = 0b00
+        self.spi.cshigh = True
 
-        self.dev_ie = TCAN4550_device_interrupt_enable()
-        self.dev_ie = 0x0
+
+        # TCAN device initialization
+        
         # Begin by clearing any potential SPI errors
         self.TCAN_clearSPIerr()
 
-        self.TCAN_configure_interrupt_enable(self.dev_ie)
+        self.dev_ie = TCAN4550_device_interrupt_enable()
+        self.dev_ie = 0x0  # Initialize to 0 to all bits are set to 0.
+        self.TCAN_configure_interrupt_enable(self.dev_ie)  # Disable all non-MCAN related interrupts for simplicity
+
+        self.dev_ir = TCAN4550_device_interrupt()
+        self.dev.ir = 0x0  # Setup a new MCAN IR object for easy interrupt checking
+        self.TCAN_read_interrupts(self.dev_ir)  # Request that the struct be updated with current DEVICE (not MCAN) interrupt values
+
+        # Configure the CAN bus speeds
+        self.TCANNomTiming = TCAN4550_MCAN_nominal_timing_simple()  # 500k arbitration with a 40 MHz crystal ((40E6 / 2) / (32 + 8) = 500E3)
+        self.TCANNomTiming = 0x0
+        self.TCANNomTiming.NominalBitRatePrescaler = 2
+        self.TCANNomTiming.NominalTqBeforeSamplePoint = 32
+        self.TCANNomTiming.NominalTqAfterSamplePoint = 8
+
+        self.TCANDataTiming = TCAN4550_MCAN_nominal_timing_simple()  # 2 Mbps CAN FD with a 40 MHz crystal (40E6 / (15 + 5) = 2E6)
+        self.TCANDataTiming = 0x0
+        self.TCANDataTiming.DataBitRatePrescaler = 1;
+        self.TCANDataTiming.DataTqBeforeSamplePoint = 15;
+        self.TCANDataTiming.DataTqAfterSamplePoint = 5;
+
 
 
     def TCAN_clearSPIerr(self) -> None:
         pass
     
     def TCAN_configure_interrupt_enable(self, ie) -> bool:
+        return True
+
+    def TCAN_read_interrupts(self, ir) -> bool:
+
         return True
 
     def TCAN_write_32(self, address, data) -> None:
@@ -44,7 +76,7 @@ class TCAN4550:
 
         
 
-class TCAN4550_device_interrupt_enable_bits(ctypes.LittleEndianStructure):
+class TCAN4550_device_interrupt_enable_bits(ctypes.BigEndianStructure):
     _fields_ = [
         # @brief DEV_IE[0:7] : RESERVED
         ("RESERVED1", uint8_t , 8),
