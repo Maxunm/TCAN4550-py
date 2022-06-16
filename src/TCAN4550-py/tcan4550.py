@@ -24,7 +24,7 @@ class TCAN4550:
     def TCAN_write_32(self, address, data) -> None:
         pass
     
-    def TCAN_write_word(self, data, address, no_words) -> None:
+    def TCAN_write(self, data, address, no_words) -> None:
         pass
 
 
