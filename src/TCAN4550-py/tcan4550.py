@@ -83,6 +83,64 @@ class TCAN4550:
         self.MRAMConfiguration.TxEventFIFONumElements = 0				# TX Event FIFO number of elements
         self.MRAMConfiguration.TxBufferNumElements = 2					# TX buffer number of elements
         self.MRAMConfiguration.TxBufferElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data	# TX buffer data payload size
+        /* Configure the MCAN core with the settings above, the changes in this block are write protected registers,      *
+         * so it makes the most sense to do them all at once, so we only unlock and lock once                             */
+
+        TCAN4x5x_MCAN_EnableProtectedRegisters();					// Start by making protected registers accessible
+        TCAN4x5x_MCAN_ConfigureCCCRRegister(&cccrConfig);			// Enable FD mode and Bit rate switching
+        TCAN4x5x_MCAN_ConfigureGlobalFilter(&gfc);                  // Configure the global filter configuration (Default CAN message behavior)
+        TCAN4x5x_MCAN_ConfigureNominalTiming_Simple(&TCANNomTiming);// Setup nominal/arbitration bit timing
+        TCAN4x5x_MCAN_ConfigureDataTiming_Simple(&TCANDataTiming);	// Setup CAN FD timing
+        TCAN4x5x_MRAM_Clear();										// Clear all of MRAM (Writes 0's to all of it)
+        TCAN4x5x_MRAM_Configure(&MRAMConfiguration);				// Set up the applicable registers related to MRAM configuration
+        TCAN4x5x_MCAN_DisableProtectedRegisters();					// Disable protected write and take device out of INIT mode
+
+
+        /* Set the interrupts we want to enable for MCAN */
+        TCAN4x5x_MCAN_Interrupt_Enable mcan_ie = {0};				// Remember to initialize to 0, or you'll get random garbage!
+        mcan_ie.RF0NE = 1;											// RX FIFO 0 new message interrupt enable
+
+        TCAN4x5x_MCAN_ConfigureInterruptEnable(&mcan_ie);			// Enable the appropriate registers
+
+
+        /* Setup filters, this filter will mark any message with ID 0x055 as a priority message */
+        TCAN4x5x_MCAN_SID_Filter SID_ID = {0};
+        SID_ID.SFT = TCAN4x5x_SID_SFT_CLASSIC;						// SFT: Standard filter type. Configured as a classic filter
+        SID_ID.SFEC = TCAN4x5x_SID_SFEC_PRIORITYSTORERX0;			// Standard filter element configuration, store it in RX fifo 0 as a priority message
+        SID_ID.SFID1 = 0x055;										// SFID1 (Classic mode Filter)
+        SID_ID.SFID2 = 0x7FF;										// SFID2 (Classic mode Mask)
+        TCAN4x5x_MCAN_WriteSIDFilter(0, &SID_ID);					// Write to the MRAM
+
+
+        /* Store ID 0x12345678 as a priority message */
+        TCAN4x5x_MCAN_XID_Filter XID_ID = {0};
+        XID_ID.EFT = TCAN4x5x_XID_EFT_CLASSIC;                      // EFT
+        XID_ID.EFEC = TCAN4x5x_XID_EFEC_PRIORITYSTORERX0;           // EFEC
+        XID_ID.EFID1 = 0x12345678;                                  // EFID1 (Classic mode filter)
+        XID_ID.EFID2 = 0x1FFFFFFF;                                  // EFID2 (Classic mode mask)
+        TCAN4x5x_MCAN_WriteXIDFilter(0, &XID_ID);                   // Write to the MRAM
+
+        /* Configure the TCAN4550 Non-CAN-related functions */
+        TCAN4x5x_DEV_CONFIG devConfig = {0};                        // Remember to initialize to 0, or you'll get random garbage!
+        devConfig.SWE_DIS = 0;                                      // Keep Sleep Wake Error Enabled (it's a disable bit, not an enable)
+        devConfig.DEVICE_RESET = 0;                                 // Not requesting a software reset
+        devConfig.WD_EN = 0;                                        // Watchdog disabled
+        devConfig.nWKRQ_CONFIG = 0;                                 // Mirror INH function (default)
+        devConfig.INH_DIS = 0;                                      // INH enabled (default)
+        devConfig.GPIO1_GPO_CONFIG = TCAN4x5x_DEV_CONFIG_GPO1_MCAN_INT1;    // MCAN nINT 1 (default)
+        devConfig.FAIL_SAFE_EN = 0;                                 // Failsafe disabled (default)
+        devConfig.GPIO1_CONFIG = TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_GPO;      // GPIO set as GPO (Default)
+        devConfig.WD_ACTION = TCAN4x5x_DEV_CONFIG_WDT_ACTION_nINT;  // Watchdog set an interrupt (default)
+        devConfig.WD_BIT_RESET = 0;                                 // Don't reset the watchdog
+        devConfig.nWKRQ_VOLTAGE = 0;                                // Set nWKRQ to internal voltage rail (default)
+        devConfig.GPO2_CONFIG = TCAN4x5x_DEV_CONFIG_GPO2_NO_ACTION; // GPO2 has no behavior (default)
+        devConfig.CLK_REF = 1;                                      // Input crystal is a 40 MHz crystal (default)
+        devConfig.WAKE_CONFIG = TCAN4x5x_DEV_CONFIG_WAKE_BOTH_EDGES;// Wake pin can be triggered by either edge (default)
+        TCAN4x5x_Device_Configure(&devConfig);                      // Configure the device with the above configuration
+
+        TCAN4x5x_Device_SetMode(TCAN4x5x_DEVICE_MODE_NORMAL);       // Set to normal mode, since configuration is done. This line turns on the transceiver
+
+        TCAN4x5x_MCAN_ClearInterruptsAll();                         // Resets all MCAN interrupts (does NOT include any SPIERR interrupts)
 
     def TCAN4x5x_Device_ClearInterrupts(self, ir):
         pass
