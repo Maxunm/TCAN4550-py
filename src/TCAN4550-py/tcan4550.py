@@ -1,5 +1,4 @@
 import ctypes
-from enum import Enum
 
 uint8_t = ctypes.c_uint8
 uint16_t = ctypes.c_uint16
@@ -8,6 +7,598 @@ import spidev
 
 
 class TCAN4550:
+    MRAM_SIZE = 2048
+
+    # *****************************************************************************
+    # Register Address Sections
+    # *****************************************************************************
+    REG_SPI_CONFIG = 0x0000
+    REG_DEV_CONFIG = 0x0800
+    REG_MCAN = 0x1000
+    REG_MRAM = 0x8000
+
+    # *****************************************************************************
+    # SPI Registers and Device ID Register Addresses: 	0x0000 Prefix
+    # *****************************************************************************
+    REG_SPI_DEVICE_ID0 = 0x0000
+    REG_SPI_DEVICE_ID1 = 0x0004
+    REG_SPI_REVISION = 0x0008
+    REG_SPI_STATUS = 0x000C
+    REG_SPI_ERROR_STATUS_MASK = 0x0010
+
+    # *****************************************************************************
+    # Device Configuration Register Addresses: 	0x0800 Prefix
+    # *****************************************************************************
+    REG_DEV_MODES_AND_PINS = 0x0800
+    REG_DEV_TIMESTAMP_PRESCALER = 0x0804
+    REG_DEV_TEST_REGISTERS = 0x0808
+    REG_DEV_IR = 0x0820
+    REG_DEV_IE = 0x0830
+
+    # *****************************************************************************
+    # MCAN Register Addresses: 	0x1000 Prefix
+    # *****************************************************************************
+    REG_MCAN_CREL = 0x1000
+    REG_MCAN_ENDN = 0x1004
+    REG_MCAN_CUST = 0x1008
+    REG_MCAN_DBTP = 0x100C
+    REG_MCAN_TEST = 0x1010
+    REG_MCAN_RWD = 0x1014
+    REG_MCAN_CCCR = 0x1018
+    REG_MCAN_NBTP = 0x101C
+    REG_MCAN_TSCC = 0x1020
+    REG_MCAN_TSCV = 0x1024
+    REG_MCAN_TOCC = 0x1028
+    REG_MCAN_TOCV = 0x102C
+    REG_MCAN_ECR = 0x1040
+    REG_MCAN_PSR = 0x1044
+    REG_MCAN_TDCR = 0x1048
+    REG_MCAN_IR = 0x1050
+    REG_MCAN_IE = 0x1054
+    REG_MCAN_ILS = 0x1058
+    REG_MCAN_ILE = 0x105C
+    REG_MCAN_GFC = 0x1080
+    REG_MCAN_SIDFC = 0x1084
+    REG_MCAN_XIDFC = 0x1088
+    REG_MCAN_XIDAM = 0x1090
+    REG_MCAN_HPMS = 0x1094
+    REG_MCAN_NDAT1 = 0x1098
+    REG_MCAN_NDAT2 = 0x109C
+    REG_MCAN_RXF0C = 0x10A0
+    REG_MCAN_RXF0S = 0x10A4
+    REG_MCAN_RXF0A = 0x10A8
+    REG_MCAN_RXBC = 0x10AC
+    REG_MCAN_RXF1C = 0x10B0
+    REG_MCAN_RXF1S = 0x10B4
+    REG_MCAN_RXF1A = 0x10B8
+    REG_MCAN_RXESC = 0x10BC
+    REG_MCAN_TXBC = 0x10C0
+    REG_MCAN_TXFQS = 0x10C4
+    REG_MCAN_TXESC = 0x10C8
+    REG_MCAN_TXBRP = 0x10CC
+    REG_MCAN_TXBAR = 0x10D0
+    REG_MCAN_TXBCR = 0x10D4
+    REG_MCAN_TXBTO = 0x10D8
+    REG_MCAN_TXBCF = 0x10DC
+    REG_MCAN_TXBTIE = 0x10E0
+    REG_MCAN_TXBCIE = 0x10E4
+    REG_MCAN_TXEFC = 0x10F0
+    REG_MCAN_TXEFS = 0x10F4
+    REG_MCAN_TXEFA = 0x10F8
+    # *****************************************************************************
+
+    # *****************************************************************************
+    # DLC Value Defines: Used for RX and TX elements. The DLC[3:0] bit field
+    # *****************************************************************************
+    MCAN_DLC_0B = 0x00000000
+    MCAN_DLC_1B = 0x00000001
+    MCAN_DLC_2B = 0x00000002
+    MCAN_DLC_3B = 0x00000003
+    MCAN_DLC_4B = 0x00000004
+    MCAN_DLC_5B = 0x00000005
+    MCAN_DLC_6B = 0x00000006
+    MCAN_DLC_7B = 0x00000007
+    MCAN_DLC_8B = 0x00000008
+    MCAN_DLC_12B = 0x00000009
+    MCAN_DLC_16B = 0x0000000A
+    MCAN_DLC_20B = 0x0000000B
+    MCAN_DLC_24B = 0x0000000C
+    MCAN_DLC_32B = 0x0000000D
+    MCAN_DLC_48B = 0x0000000E
+    MCAN_DLC_64B = 0x0000000F
+    # *****************************************************************************
+
+    # *****************************************************************************
+    # MCAN Register Bit Field Defines
+    # *****************************************************************************
+
+    # DBTP
+    REG_BITS_MCAN_DBTP_TDC_EN = 0x00800000
+
+    # TEST
+    REG_BITS_MCAN_TEST_RX_DOM = 0x00000000
+    REG_BITS_MCAN_TEST_RX_REC = 0x00000080
+    REG_BITS_MCAN_TEST_TX_SP = 0x00000020
+    REG_BITS_MCAN_TEST_TX_DOM = 0x00000040
+    REG_BITS_MCAN_TEST_TX_REC = 0x00000060
+    REG_BITS_MCAN_TEST_LOOP_BACK = 0x00000010
+
+    # CCCR
+    REG_BITS_MCAN_CCCR_RESERVED_MASK = 0xFFFF0C00
+    REG_BITS_MCAN_CCCR_NISO_ISO = 0x00000000
+    REG_BITS_MCAN_CCCR_NISO_BOSCH = 0x00008000
+    REG_BITS_MCAN_CCCR_TXP = 0x00004000
+    REG_BITS_MCAN_CCCR_EFBI = 0x00002000
+    REG_BITS_MCAN_CCCR_PXHD_DIS = 0x00001000
+    REG_BITS_MCAN_CCCR_BRSE = 0x00000200
+    REG_BITS_MCAN_CCCR_FDOE = 0x00000100
+    REG_BITS_MCAN_CCCR_TEST = 0x00000080
+    REG_BITS_MCAN_CCCR_DAR_DIS = 0x00000040
+    REG_BITS_MCAN_CCCR_MON = 0x00000020
+    REG_BITS_MCAN_CCCR_CSR = 0x00000010
+    REG_BITS_MCAN_CCCR_CSA = 0x00000008
+    REG_BITS_MCAN_CCCR_ASM = 0x00000004
+    REG_BITS_MCAN_CCCR_CCE = 0x00000002
+    REG_BITS_MCAN_CCCR_INIT = 0x00000001
+
+    # IE
+    REG_BITS_MCAN_IE_ARAE = 0x20000000
+    REG_BITS_MCAN_IE_PEDE = 0x10000000
+    REG_BITS_MCAN_IE_PEAE = 0x08000000
+    REG_BITS_MCAN_IE_WDIE = 0x04000000
+    REG_BITS_MCAN_IE_BOE = 0x02000000
+    REG_BITS_MCAN_IE_EWE = 0x01000000
+    REG_BITS_MCAN_IE_EPE = 0x00800000
+    REG_BITS_MCAN_IE_ELOE = 0x00400000
+    REG_BITS_MCAN_IE_BEUE = 0x00200000
+    REG_BITS_MCAN_IE_BECE = 0x00100000
+    REG_BITS_MCAN_IE_DRXE = 0x00080000
+    REG_BITS_MCAN_IE_TOOE = 0x00040000
+    REG_BITS_MCAN_IE_MRAFE = 0x00020000
+    REG_BITS_MCAN_IE_TSWE = 0x00010000
+    REG_BITS_MCAN_IE_TEFLE = 0x00008000
+    REG_BITS_MCAN_IE_TEFFE = 0x00004000
+    REG_BITS_MCAN_IE_TEFWE = 0x00002000
+    REG_BITS_MCAN_IE_TEFNE = 0x00001000
+    REG_BITS_MCAN_IE_TFEE = 0x00000800
+    REG_BITS_MCAN_IE_TCFE = 0x00000400
+    REG_BITS_MCAN_IE_TCE = 0x00000200
+    REG_BITS_MCAN_IE_HPME = 0x00000100
+    REG_BITS_MCAN_IE_RF1LE = 0x00000080
+    REG_BITS_MCAN_IE_RF1FE = 0x00000040
+    REG_BITS_MCAN_IE_RF1WE = 0x00000020
+    REG_BITS_MCAN_IE_RF1NE = 0x00000010
+    REG_BITS_MCAN_IE_RF0LE = 0x00000008
+    REG_BITS_MCAN_IE_RF0FE = 0x00000004
+    REG_BITS_MCAN_IE_RF0WE = 0x00000002
+    REG_BITS_MCAN_IE_RF0NE = 0x00000001
+
+    # IR
+    REG_BITS_MCAN_IR_ARA = 0x20000000
+    REG_BITS_MCAN_IR_PED = 0x10000000
+    REG_BITS_MCAN_IR_PEA = 0x08000000
+    REG_BITS_MCAN_IR_WDI = 0x04000000
+    REG_BITS_MCAN_IR_BO = 0x02000000
+    REG_BITS_MCAN_IR_EW = 0x01000000
+    REG_BITS_MCAN_IR_EP = 0x00800000
+    REG_BITS_MCAN_IR_ELO = 0x00400000
+    REG_BITS_MCAN_IR_BEU = 0x00200000
+    REG_BITS_MCAN_IR_BEC = 0x00100000
+    REG_BITS_MCAN_IR_DRX = 0x00080000
+    REG_BITS_MCAN_IR_TOO = 0x00040000
+    REG_BITS_MCAN_IR_MRAF = 0x00020000
+    REG_BITS_MCAN_IR_TSW = 0x00010000
+    REG_BITS_MCAN_IR_TEFL = 0x00008000
+    REG_BITS_MCAN_IR_TEFF = 0x00004000
+    REG_BITS_MCAN_IR_TEFW = 0x00002000
+    REG_BITS_MCAN_IR_TEFN = 0x00001000
+    REG_BITS_MCAN_IR_TFE = 0x00000800
+    REG_BITS_MCAN_IR_TCF = 0x00000400
+    REG_BITS_MCAN_IR_TC = 0x00000200
+    REG_BITS_MCAN_IR_HPM = 0x00000100
+    REG_BITS_MCAN_IR_RF1L = 0x00000080
+    REG_BITS_MCAN_IR_RF1F = 0x00000040
+    REG_BITS_MCAN_IR_RF1W = 0x00000020
+    REG_BITS_MCAN_IR_RF1N = 0x00000010
+    REG_BITS_MCAN_IR_RF0L = 0x00000008
+    REG_BITS_MCAN_IR_RF0F = 0x00000004
+    REG_BITS_MCAN_IR_RF0W = 0x00000002
+    REG_BITS_MCAN_IR_RF0N = 0x00000001
+
+    # ILS
+    REG_BITS_MCAN_IE_ARAL = 0x20000000
+    REG_BITS_MCAN_IE_PEDL = 0x10000000
+    REG_BITS_MCAN_IE_PEAL = 0x08000000
+    REG_BITS_MCAN_IE_WDIL = 0x04000000
+    REG_BITS_MCAN_IE_BOL = 0x02000000
+    REG_BITS_MCAN_IE_EWL = 0x01000000
+    REG_BITS_MCAN_IE_EPL = 0x00800000
+    REG_BITS_MCAN_IE_ELOL = 0x00400000
+    REG_BITS_MCAN_IE_BEUL = 0x00200000
+    REG_BITS_MCAN_IE_BECL = 0x00100000
+    REG_BITS_MCAN_IE_DRXL = 0x00080000
+    REG_BITS_MCAN_IE_TOOL = 0x00040000
+    REG_BITS_MCAN_IE_MRAFL = 0x00020000
+    REG_BITS_MCAN_IE_TSWL = 0x00010000
+    REG_BITS_MCAN_IE_TEFLL = 0x00008000
+    REG_BITS_MCAN_IE_TEFFL = 0x00004000
+    REG_BITS_MCAN_IE_TEFWL = 0x00002000
+    REG_BITS_MCAN_IE_TEFNL = 0x00001000
+    REG_BITS_MCAN_IE_TFEL = 0x00000800
+    REG_BITS_MCAN_IE_TCFL = 0x00000400
+    REG_BITS_MCAN_IE_TCL = 0x00000200
+    REG_BITS_MCAN_IE_HPML = 0x00000100
+    REG_BITS_MCAN_IE_RF1LL = 0x00000080
+    REG_BITS_MCAN_IE_RF1FL = 0x00000040
+    REG_BITS_MCAN_IE_RF1WL = 0x00000020
+    REG_BITS_MCAN_IE_RF1NL = 0x00000010
+    REG_BITS_MCAN_IE_RF0LL = 0x00000008
+    REG_BITS_MCAN_IE_RF0FL = 0x00000004
+    REG_BITS_MCAN_IE_RF0WL = 0x00000002
+    REG_BITS_MCAN_IE_RF0NL = 0x00000001
+
+    # ILE
+    REG_BITS_MCAN_ILE_EINT1 = 0x00000002
+    REG_BITS_MCAN_ILE_EINT0 = 0x00000001
+
+    # GFC
+    REG_BITS_MCAN_GFC_ANFS_FIFO0 = 0x00000000
+    REG_BITS_MCAN_GFC_ANFS_FIFO1 = 0x00000010
+    REG_BITS_MCAN_GFC_ANFE_FIFO0 = 0x00000000
+    REG_BITS_MCAN_GFC_ANFE_FIFO1 = 0x00000004
+    REG_BITS_MCAN_GFC_RRFS = 0x00000002
+    REG_BITS_MCAN_GFC_RRFE = 0x00000001
+    REG_BITS_MCAN_GFC_MASK = 0x0000003F
+
+    # NDAT1
+
+    # NDAT2
+
+    # RXF0C
+    REG_BITS_MCAN_RXF0C_F0OM_OVERWRITE = 0x80000000
+
+    # RXESC
+    REG_BITS_MCAN_RXESC_RBDS_8B = 0x00000000
+    REG_BITS_MCAN_RXESC_RBDS_12B = 0x00000100
+    REG_BITS_MCAN_RXESC_RBDS_16B = 0x00000200
+    REG_BITS_MCAN_RXESC_RBDS_20B = 0x00000300
+    REG_BITS_MCAN_RXESC_RBDS_24B = 0x00000400
+    REG_BITS_MCAN_RXESC_RBDS_32B = 0x00000500
+    REG_BITS_MCAN_RXESC_RBDS_48B = 0x00000600
+    REG_BITS_MCAN_RXESC_RBDS_64B = 0x00000700
+    REG_BITS_MCAN_RXESC_F1DS_8B = 0x00000000
+    REG_BITS_MCAN_RXESC_F1DS_12B = 0x00000010
+    REG_BITS_MCAN_RXESC_F1DS_16B = 0x00000020
+    REG_BITS_MCAN_RXESC_F1DS_20B = 0x00000030
+    REG_BITS_MCAN_RXESC_F1DS_24B = 0x00000040
+    REG_BITS_MCAN_RXESC_F1DS_32B = 0x00000050
+    REG_BITS_MCAN_RXESC_F1DS_48B = 0x00000060
+    REG_BITS_MCAN_RXESC_F1DS_64B = 0x00000070
+    REG_BITS_MCAN_RXESC_F0DS_8B = 0x00000000
+    REG_BITS_MCAN_RXESC_F0DS_12B = 0x00000001
+    REG_BITS_MCAN_RXESC_F0DS_16B = 0x00000002
+    REG_BITS_MCAN_RXESC_F0DS_20B = 0x00000003
+    REG_BITS_MCAN_RXESC_F0DS_24B = 0x00000004
+    REG_BITS_MCAN_RXESC_F0DS_32B = 0x00000005
+    REG_BITS_MCAN_RXESC_F0DS_48B = 0x00000006
+    REG_BITS_MCAN_RXESC_F0DS_64B = 0x00000007
+
+    # TXBC
+    REG_BITS_MCAN_TXBC_TFQM = 0x40000000
+
+    # TXESC
+    REG_BITS_MCAN_TXESC_TBDS_8 = 0x00000000
+    REG_BITS_MCAN_TXESC_TBDS_12 = 0x00000001
+    REG_BITS_MCAN_TXESC_TBDS_16 = 0x00000002
+    REG_BITS_MCAN_TXESC_TBDS_20 = 0x00000003
+    REG_BITS_MCAN_TXESC_TBDS_24 = 0x00000004
+    REG_BITS_MCAN_TXESC_TBDS_32 = 0x00000005
+    REG_BITS_MCAN_TXESC_TBDS_48 = 0x00000006
+    REG_BITS_MCAN_TXESC_TBDS_64 = 0x00000007
+
+    # TSCC
+    REG_BITS_MCAN_TSCC_PRESCALER_MASK = 0x000F0000
+    REG_BITS_MCAN_TSCC_COUNTER_ALWAYS_0 = 0x00000000
+    REG_BITS_MCAN_TSCC_COUNTER_USE_TCP = 0x00000001
+    REG_BITS_MCAN_TSCC_COUNTER_EXTERNAL = 0x00000002
+
+    # TXBAR
+    REG_BITS_MCAN_TXBAR_AR31 = 0x80000000
+    REG_BITS_MCAN_TXBAR_AR30 = 0x40000000
+    REG_BITS_MCAN_TXBAR_AR29 = 0x20000000
+    REG_BITS_MCAN_TXBAR_AR28 = 0x10000000
+    REG_BITS_MCAN_TXBAR_AR27 = 0x08000000
+    REG_BITS_MCAN_TXBAR_AR26 = 0x04000000
+    REG_BITS_MCAN_TXBAR_AR25 = 0x02000000
+    REG_BITS_MCAN_TXBAR_AR24 = 0x01000000
+    REG_BITS_MCAN_TXBAR_AR23 = 0x00800000
+    REG_BITS_MCAN_TXBAR_AR22 = 0x00400000
+    REG_BITS_MCAN_TXBAR_AR21 = 0x00200000
+    REG_BITS_MCAN_TXBAR_AR20 = 0x00100000
+    REG_BITS_MCAN_TXBAR_AR19 = 0x00080000
+    REG_BITS_MCAN_TXBAR_AR18 = 0x00040000
+    REG_BITS_MCAN_TXBAR_AR17 = 0x00020000
+    REG_BITS_MCAN_TXBAR_AR16 = 0x00010000
+    REG_BITS_MCAN_TXBAR_AR15 = 0x00008000
+    REG_BITS_MCAN_TXBAR_AR14 = 0x00004000
+    REG_BITS_MCAN_TXBAR_AR13 = 0x00002000
+    REG_BITS_MCAN_TXBAR_AR12 = 0x00001000
+    REG_BITS_MCAN_TXBAR_AR11 = 0x00000800
+    REG_BITS_MCAN_TXBAR_AR10 = 0x00000400
+    REG_BITS_MCAN_TXBAR_AR9 = 0x00000200
+    REG_BITS_MCAN_TXBAR_AR8 = 0x00000100
+    REG_BITS_MCAN_TXBAR_AR7 = 0x00000080
+    REG_BITS_MCAN_TXBAR_AR6 = 0x00000040
+    REG_BITS_MCAN_TXBAR_AR5 = 0x00000020
+    REG_BITS_MCAN_TXBAR_AR4 = 0x00000010
+    REG_BITS_MCAN_TXBAR_AR3 = 0x00000008
+    REG_BITS_MCAN_TXBAR_AR2 = 0x00000004
+    REG_BITS_MCAN_TXBAR_AR1 = 0x00000002
+    REG_BITS_MCAN_TXBAR_AR0 = 0x00000001
+
+    # TXBCR
+    REG_BITS_MCAN_TXBCR_CR31 = 0x80000000
+    REG_BITS_MCAN_TXBCR_CR30 = 0x40000000
+    REG_BITS_MCAN_TXBCR_CR29 = 0x20000000
+    REG_BITS_MCAN_TXBCR_CR28 = 0x10000000
+    REG_BITS_MCAN_TXBCR_CR27 = 0x08000000
+    REG_BITS_MCAN_TXBCR_CR26 = 0x04000000
+    REG_BITS_MCAN_TXBCR_CR25 = 0x02000000
+    REG_BITS_MCAN_TXBCR_CR24 = 0x01000000
+    REG_BITS_MCAN_TXBCR_CR23 = 0x00800000
+    REG_BITS_MCAN_TXBCR_CR22 = 0x00400000
+    REG_BITS_MCAN_TXBCR_CR21 = 0x00200000
+    REG_BITS_MCAN_TXBCR_CR20 = 0x00100000
+    REG_BITS_MCAN_TXBCR_CR19 = 0x00080000
+    REG_BITS_MCAN_TXBCR_CR18 = 0x00040000
+    REG_BITS_MCAN_TXBCR_CR17 = 0x00020000
+    REG_BITS_MCAN_TXBCR_CR16 = 0x00010000
+    REG_BITS_MCAN_TXBCR_CR15 = 0x00008000
+    REG_BITS_MCAN_TXBCR_CR14 = 0x00004000
+    REG_BITS_MCAN_TXBCR_CR13 = 0x00002000
+    REG_BITS_MCAN_TXBCR_CR12 = 0x00001000
+    REG_BITS_MCAN_TXBCR_CR11 = 0x00000800
+    REG_BITS_MCAN_TXBCR_CR10 = 0x00000400
+    REG_BITS_MCAN_TXBCR_CR9 = 0x00000200
+    REG_BITS_MCAN_TXBCR_CR8 = 0x00000100
+    REG_BITS_MCAN_TXBCR_CR7 = 0x00000080
+    REG_BITS_MCAN_TXBCR_CR6 = 0x00000040
+    REG_BITS_MCAN_TXBCR_CR5 = 0x00000020
+    REG_BITS_MCAN_TXBCR_CR4 = 0x00000010
+    REG_BITS_MCAN_TXBCR_CR3 = 0x00000008
+    REG_BITS_MCAN_TXBCR_CR2 = 0x00000004
+    REG_BITS_MCAN_TXBCR_CR1 = 0x00000002
+    REG_BITS_MCAN_TXBCR_CR0 = 0x00000001
+
+    # TXBTIE
+    REG_BITS_MCAN_TXBTIE_TIE31 = 0x80000000
+    REG_BITS_MCAN_TXBTIE_TIE30 = 0x40000000
+    REG_BITS_MCAN_TXBTIE_TIE29 = 0x20000000
+    REG_BITS_MCAN_TXBTIE_TIE28 = 0x10000000
+    REG_BITS_MCAN_TXBTIE_TIE27 = 0x08000000
+    REG_BITS_MCAN_TXBTIE_TIE26 = 0x04000000
+    REG_BITS_MCAN_TXBTIE_TIE25 = 0x02000000
+    REG_BITS_MCAN_TXBTIE_TIE24 = 0x01000000
+    REG_BITS_MCAN_TXBTIE_TIE23 = 0x00800000
+    REG_BITS_MCAN_TXBTIE_TIE22 = 0x00400000
+    REG_BITS_MCAN_TXBTIE_TIE21 = 0x00200000
+    REG_BITS_MCAN_TXBTIE_TIE20 = 0x00100000
+    REG_BITS_MCAN_TXBTIE_TIE19 = 0x00080000
+    REG_BITS_MCAN_TXBTIE_TIE18 = 0x00040000
+    REG_BITS_MCAN_TXBTIE_TIE17 = 0x00020000
+    REG_BITS_MCAN_TXBTIE_TIE16 = 0x00010000
+    REG_BITS_MCAN_TXBTIE_TIE15 = 0x00008000
+    REG_BITS_MCAN_TXBTIE_TIE14 = 0x00004000
+    REG_BITS_MCAN_TXBTIE_TIE13 = 0x00002000
+    REG_BITS_MCAN_TXBTIE_TIE12 = 0x00001000
+    REG_BITS_MCAN_TXBTIE_TIE11 = 0x00000800
+    REG_BITS_MCAN_TXBTIE_TIE10 = 0x00000400
+    REG_BITS_MCAN_TXBTIE_TIE9 = 0x00000200
+    REG_BITS_MCAN_TXBTIE_TIE8 = 0x00000100
+    REG_BITS_MCAN_TXBTIE_TIE7 = 0x00000080
+    REG_BITS_MCAN_TXBTIE_TIE6 = 0x00000040
+    REG_BITS_MCAN_TXBTIE_TIE5 = 0x00000020
+    REG_BITS_MCAN_TXBTIE_TIE4 = 0x00000010
+    REG_BITS_MCAN_TXBTIE_TIE3 = 0x00000008
+    REG_BITS_MCAN_TXBTIE_TIE2 = 0x00000004
+    REG_BITS_MCAN_TXBTIE_TIE1 = 0x00000002
+    REG_BITS_MCAN_TXBTIE_TIE0 = 0x00000001
+
+    # TXBCIE
+    REG_BITS_MCAN_TXBCIE_CFIE31 = 0x80000000
+    REG_BITS_MCAN_TXBCIE_CFIE30 = 0x40000000
+    REG_BITS_MCAN_TXBCIE_CFIE29 = 0x20000000
+    REG_BITS_MCAN_TXBCIE_CFIE28 = 0x10000000
+    REG_BITS_MCAN_TXBCIE_CFIE27 = 0x08000000
+    REG_BITS_MCAN_TXBCIE_CFIE26 = 0x04000000
+    REG_BITS_MCAN_TXBCIE_CFIE25 = 0x02000000
+    REG_BITS_MCAN_TXBCIE_CFIE24 = 0x01000000
+    REG_BITS_MCAN_TXBCIE_CFIE23 = 0x00800000
+    REG_BITS_MCAN_TXBCIE_CFIE22 = 0x00400000
+    REG_BITS_MCAN_TXBCIE_CFIE21 = 0x00200000
+    REG_BITS_MCAN_TXBCIE_CFIE20 = 0x00100000
+    REG_BITS_MCAN_TXBCIE_CFIE19 = 0x00080000
+    REG_BITS_MCAN_TXBCIE_CFIE18 = 0x00040000
+    REG_BITS_MCAN_TXBCIE_CFIE17 = 0x00020000
+    REG_BITS_MCAN_TXBCIE_CFIE16 = 0x00010000
+    REG_BITS_MCAN_TXBCIE_CFIE15 = 0x00008000
+    REG_BITS_MCAN_TXBCIE_CFIE14 = 0x00004000
+    REG_BITS_MCAN_TXBCIE_CFIE13 = 0x00002000
+    REG_BITS_MCAN_TXBCIE_CFIE12 = 0x00001000
+    REG_BITS_MCAN_TXBCIE_CFIE11 = 0x00000800
+    REG_BITS_MCAN_TXBCIE_CFIE10 = 0x00000400
+    REG_BITS_MCAN_TXBCIE_CFIE9 = 0x00000200
+    REG_BITS_MCAN_TXBCIE_CFIE8 = 0x00000100
+    REG_BITS_MCAN_TXBCIE_CFIE7 = 0x00000080
+    REG_BITS_MCAN_TXBCIE_CFIE6 = 0x00000040
+    REG_BITS_MCAN_TXBCIE_CFIE5 = 0x00000020
+    REG_BITS_MCAN_TXBCIE_CFIE4 = 0x00000010
+    REG_BITS_MCAN_TXBCIE_CFIE3 = 0x00000008
+    REG_BITS_MCAN_TXBCIE_CFIE2 = 0x00000004
+    REG_BITS_MCAN_TXBCIE_CFIE1 = 0x00000002
+    REG_BITS_MCAN_TXBCIE_CFIE0 = 0x00000001
+    # *****************************************************************************
+
+    # *****************************************************************************
+    # Device Register Bit Field Defines
+    # *****************************************************************************
+
+    # Modes of Operation and Pin Configuration Registers (0x0800)
+    # Generic masks
+    REG_BITS_DEVICE_MODE_FORCED_SET_BITS = 0x00000020
+
+    # Wake pin
+    REG_BITS_DEVICE_MODE_WAKE_PIN_MASK = 0xC0000000
+    REG_BITS_DEVICE_MODE_WAKE_PIN_DIS = 0x00000000
+    REG_BITS_DEVICE_MODE_WAKE_PIN_RISING = 0x40000000
+    REG_BITS_DEVICE_MODE_WAKE_PIN_FALLING = 0x80000000
+    REG_BITS_DEVICE_MODE_WAKE_PIN_BOTHEDGES = 0xC0000000
+
+    # WD_Timer (If applicable)
+    REG_BITS_DEVICE_MODE_WD_TIMER_MASK = 0x30000000
+    REG_BITS_DEVICE_MODE_WD_TIMER_60MS = 0x00000000
+    REG_BITS_DEVICE_MODE_WD_TIMER_600MS = 0x10000000
+    REG_BITS_DEVICE_MODE_WD_TIMER_3S = 0x20000000
+    REG_BITS_DEVICE_MODE_WD_TIMER_6S = 0x30000000
+
+    # WD_TIMER_CLK_REF
+    REG_BITS_DEVICE_MODE_WD_CLK_MASK = 0x08000000
+    REG_BITS_DEVICE_MODE_WD_CLK_20MHZ = 0x00000000
+    REG_BITS_DEVICE_MODE_WD_CLK_40MHZ = 0x08000000
+
+    # GPO2 Pin Configuration
+    REG_BITS_DEVICE_MODE_GPO2_MASK = 0x00C00000
+    REG_BITS_DEVICE_MODE_GPO2_CAN_FAULT = 0x00000000
+    REG_BITS_DEVICE_MODE_GPO2_MCAN_INT0 = 0x00400000
+    REG_BITS_DEVICE_MODE_GPO2_WDT = 0x00800000
+    REG_BITS_DEVICE_MODE_GPO2_NINT = 0x00C00000
+
+    # Test Mode Enable Bit
+    REG_BITS_DEVICE_MODE_TESTMODE_ENMASK = 0x00200000
+    REG_BITS_DEVICE_MODE_TESTMODE_EN = 0x00200000
+    REG_BITS_DEVICE_MODE_TESTMODE_DIS = 0x00000000
+
+    # nWKRQ Pin GPO Voltage Rail COnfiguration
+    REG_BITS_DEVICE_MODE_NWKRQ_VOLT_MASK = 0x00080000
+    REG_BITS_DEVICE_MODE_NWKRQ_VOLT_INTERNAL = 0x00000000
+    REG_BITS_DEVICE_MODE_NWKRQ_VOLT_VIO = 0x00080000
+
+    # WD_BIT
+    REG_BITS_DEVICE_MODE_WDT_RESET_BIT = 0x00040000
+
+    # WD_ACTION
+    REG_BITS_DEVICE_MODE_WDT_ACTION_MASK = 0x00020000
+    REG_BITS_DEVICE_MODE_WDT_ACTION_INT = 0x00000000
+    REG_BITS_DEVICE_MODE_WDT_ACTION_INH_PULSE = 0x00010000
+    REG_BITS_DEVICE_MODE_WDT_ACTION_WDT_PULSE = 0x00020000
+
+    # CLKOUT/GPO1 Pin Mode Select
+    REG_BITS_DEVICE_MODE_GPO1_MODE_MASK = 0x0000C000
+    REG_BITS_DEVICE_MODE_GPO1_MODE_GPO = 0x00000000
+    REG_BITS_DEVICE_MODE_GPO1_MODE_CLKOUT = 0x00004000
+    REG_BITS_DEVICE_MODE_GPO1_MODE_GPI = 0x00008000
+
+    # Fail Safe Enable
+    REG_BITS_DEVICE_MODE_FAIL_SAFE_MASK = 0x00002000
+    REG_BITS_DEVICE_MODE_FAIL_SAFE_EN = 0x00002000
+    REG_BITS_DEVICE_MODE_FAIL_SAFE_DIS = 0x00000000
+
+    # CLKOUT Prescaler
+    REG_BITS_DEVICE_MODE_CLKOUT_MASK = 0x00001000
+    REG_BITS_DEVICE_MODE_CLKOUT_DIV1 = 0x00000000
+    REG_BITS_DEVICE_MODE_CLKOUT_DIV2 = 0x00001000
+
+    # GPO1 Function Select
+    REG_BITS_DEVICE_MODE_GPO1_FUNC_MASK = 0x00000C00
+    REG_BITS_DEVICE_MODE_GPO1_FUNC_SPI_INT = 0x00000000
+    REG_BITS_DEVICE_MODE_GPO1_FUNC_MCAN_INT1 = 0x00000400
+    REG_BITS_DEVICE_MODE_GPO1_FUNC_UVLO_THERM = 0x00000800
+
+    # INH Pin Disable
+    REG_BITS_DEVICE_MODE_INH_MASK = 0x00000200
+    REG_BITS_DEVICE_MODE_INH_DIS = 0x00000200
+    REG_BITS_DEVICE_MODE_INH_EN = 0x00000000
+
+    # nWKRQ Pin Configuration
+    REG_BITS_DEVICE_MODE_NWKRQ_CONFIG_MASK = 0x00000100
+    REG_BITS_DEVICE_MODE_NWKRQ_CONFIG_INH = 0x00000000
+    REG_BITS_DEVICE_MODE_NWKRQ_CONFIG_WKRQ = 0x00000100
+
+    # Mode of Operation
+    REG_BITS_DEVICE_MODE_DEVICEMODE_MASK = 0x000000C0
+    REG_BITS_DEVICE_MODE_DEVICEMODE_SLEEP = 0x00000000
+    REG_BITS_DEVICE_MODE_DEVICEMODE_STANDBY = 0x00000040
+    REG_BITS_DEVICE_MODE_DEVICEMODE_NORMAL = 0x00000080
+
+    # WDT_EN
+    REG_BITS_DEVICE_MODE_WDT_MASK = 0x00000008
+    REG_BITS_DEVICE_MODE_WDT_EN = 0x00000008
+    REG_BITS_DEVICE_MODE_WDT_DIS = 0x00000000
+
+    # Dev Reset
+    REG_BITS_DEVICE_MODE_DEVICE_RESET = 0x00000004
+
+    # SWE_DIS: Sleep Wake Error Disable
+    REG_BITS_DEVICE_MODE_SWE_MASK = 0x00000002
+    REG_BITS_DEVICE_MODE_SWE_DIS = 0x00000002
+    REG_BITS_DEVICE_MODE_SWE_EN = 0x00000000
+
+    # Test Mode Configuration
+    REG_BITS_DEVICE_MODE_TESTMODE_MASK = 0x00000001
+    REG_BITS_DEVICE_MODE_TESTMODE_PHY = 0x00000000
+    REG_BITS_DEVICE_MODE_TESTMODE_CONTROLLER = 0x00000001
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Device Interrupt Register values (0x0820)
+    REG_BITS_DEVICE_IR_CANLGND = 0x08000000
+    REG_BITS_DEVICE_IR_CANBUSOPEN = 0x04000000
+    REG_BITS_DEVICE_IR_CANBUSGND = 0x02000000
+    REG_BITS_DEVICE_IR_CANBUSBAT = 0x01000000
+    # Reserved											0x00800000
+    REG_BITS_DEVICE_IR_UVSUP = 0x00400000
+    REG_BITS_DEVICE_IR_UVIO = 0x00200000
+    REG_BITS_DEVICE_IR_PWRON = 0x00100000
+    REG_BITS_DEVICE_IR_TSD = 0x00080000
+    REG_BITS_DEVICE_IR_WDTO = 0x00040000
+    # Reserved											0x00020000
+    REG_BITS_DEVICE_IR_ECCERR = 0x00010000
+    REG_BITS_DEVICE_IR_CANINT = 0x00008000
+    REG_BITS_DEVICE_IR_LWU = 0x00004000
+    REG_BITS_DEVICE_IR_WKERR = 0x00002000
+    REG_BITS_DEVICE_IR_FRAME_OVF = 0x00001000
+    # Reserved											0x00000800
+    REG_BITS_DEVICE_IR_CANSLNT = 0x00000400
+    # Reserved											0x00000200
+    REG_BITS_DEVICE_IR_CANDOM = 0x00000100
+    REG_BITS_DEVICE_IR_GLOBALERR = 0x00000080
+    REG_BITS_DEVICE_IR_nWKRQ = 0x00000040
+    REG_BITS_DEVICE_IR_CANERR = 0x00000020
+    REG_BITS_DEVICE_IR_CANBUSFAULT = 0x00000010
+    REG_BITS_DEVICE_IR_SPIERR = 0x00000008
+    REG_BITS_DEVICE_IR_SWERR = 0x00000004
+    REG_BITS_DEVICE_IR_M_CAN_INT = 0x00000002
+    REG_BITS_DEVICE_IR_VTWD = 0x00000001
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Device Interrupt Enable Values (0x0830)
+    REG_BITS_DEVICE_IE_UVCCOUT = 0x00800000
+    REG_BITS_DEVICE_IE_UVSUP = 0x00400000
+    REG_BITS_DEVICE_IE_UVIO = 0x00200000
+    REG_BITS_DEVICE_IE_PWRON = 0x00100000
+    REG_BITS_DEVICE_IE_TSD = 0x00080000
+    REG_BITS_DEVICE_IE_WDTO = 0x00040000
+    # Reserved
+    REG_BITS_DEVICE_IE_ECCERR = 0x00010000
+    REG_BITS_DEVICE_IE_CANINT = 0x00008000
+    REG_BITS_DEVICE_IE_LWU = 0x00004000
+    REG_BITS_DEVICE_IE_WKERR = 0x00002000
+    REG_BITS_DEVICE_IE_FRAME_OVF = 0x00001000
+    # Reserved											0x00000800
+    REG_BITS_DEVICE_IE_CANSLNT = 0x00000400
+    # Reserved											0x00000200
+    REG_BITS_DEVICE_IE_CANDOM = 0x00000100
+    # Reserved											0x80-00
+    REG_BITS_DEVICE_IE_MASK = 0x7F69D700  # ! This mask is the bitwise-inverse of the 0x0830 IE register's reserved bits. A reserved bit is read as high always. This masks the reserved bits out.
 
     def __init__(self, bus: int, device: int) -> None:
         # SPI initialization
@@ -72,76 +663,78 @@ class TCAN4550:
         '''
         self.MRAMConfiguration = TCAN4x5x_MRAM_Config()
         self.MRAMConfiguration = 0x0
-        self.MRAMConfiguration.XIDNumElements = 1						# Extended ID number of elements, you MUST have a filter written to MRAM for each element defined
-        self.MRAMConfiguration.SIDNumElements = 1						# Standard ID number of elements, you MUST have a filter written to MRAM for each element defined
-        self.MRAMConfiguration.Rx0NumElements = 5						# RX0 Number of elements
-        self.MRAMConfiguration.Rx0ElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data		# RX0 data payload size
-        self.MRAMConfiguration.Rx1NumElements = 0						# RX1 number of elements
-        self.MRAMConfiguration.Rx1ElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data		# RX1 data payload size
-        self.MRAMConfiguration.RxBufNumElements = 0						# RX buffer number of elements
-        self.MRAMConfiguration.RxBufElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data		# RX buffer data payload size
-        self.MRAMConfiguration.TxEventFIFONumElements = 0				# TX Event FIFO number of elements
-        self.MRAMConfiguration.TxBufferNumElements = 2					# TX buffer number of elements
-        self.MRAMConfiguration.TxBufferElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data	# TX buffer data payload size
+        self.MRAMConfiguration.XIDNumElements = 1  # Extended ID number of elements, you MUST have a filter written to MRAM for each element defined
+        self.MRAMConfiguration.SIDNumElements = 1  # Standard ID number of elements, you MUST have a filter written to MRAM for each element defined
+        self.MRAMConfiguration.Rx0NumElements = 5  # RX0 Number of elements
+        self.MRAMConfiguration.Rx0ElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX0 data payload size
+        self.MRAMConfiguration.Rx1NumElements = 0  # RX1 number of elements
+        self.MRAMConfiguration.Rx1ElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX1 data payload size
+        self.MRAMConfiguration.RxBufNumElements = 0  # RX buffer number of elements
+        self.MRAMConfiguration.RxBufElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX buffer data payload size
+        self.MRAMConfiguration.TxEventFIFONumElements = 0  # TX Event FIFO number of elements
+        self.MRAMConfiguration.TxBufferNumElements = 2  # TX buffer number of elements
+        self.MRAMConfiguration.TxBufferElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # TX buffer data payload size
 
-        #/* Configure the MCAN core with the settings above, the changes in this block are write protected registers,      *
+        # /* Configure the MCAN core with the settings above, the changes in this block are write protected registers,      *
         # * so it makes the most sense to do them all at once, so we only unlock and lock once                             */
 
-        TCAN4x5x_MCAN_EnableProtectedRegisters()					# Start by making protected registers accessible
-        TCAN4x5x_MCAN_ConfigureCCCRRegister(&cccrConfig)			# Enable FD mode and Bit rate switching
-        TCAN4x5x_MCAN_ConfigureGlobalFilter(&gfc)                   # Configure the global filter configuration (Default CAN message behavior)
-        TCAN4x5x_MCAN_ConfigureNominalTiming_Simple(&TCANNomTiming) # Setup nominal/arbitration bit timing
-        TCAN4x5x_MCAN_ConfigureDataTiming_Simple(&TCANDataTiming)	# Setup CAN FD timing
-        TCAN4x5x_MRAM_Clear()										# Clear all of MRAM (Writes 0's to all of it)
-        TCAN4x5x_MRAM_Configure(&MRAMConfiguration)				    # Set up the applicable registers related to MRAM configuration
-        TCAN4x5x_MCAN_DisableProtectedRegisters()					# Disable protected write and take device out of INIT mode
+        self.TCAN4x5x_MCAN_EnableProtectedRegisters()  # Start by making protected registers accessible
+        self.TCAN4x5x_MCAN_ConfigureCCCRRegister(self.cccrConfig)  # Enable FD mode and Bit rate switching
+        self.TCAN4x5x_MCAN_ConfigureGlobalFilter(
+            self.gfc)  # Configure the global filter configuration (Default CAN message behavior)
+        self.TCAN4x5x_MCAN_ConfigureNominalTiming_Simple(self.TCANNomTiming)  # Setup nominal/arbitration bit timing
+        self.TCAN4x5x_MCAN_ConfigureDataTiming_Simple(self.TCANDataTiming)  # Setup CAN FD timing
+        self.TCAN4x5x_MRAM_Clear()  # Clear all of MRAM (Writes 0's to all of it)
+        self.TCAN4x5x_MRAM_Configure(
+            self.MRAMConfiguration)  # Set up the applicable registers related to MRAM configuration
+        self.TCAN4x5x_MCAN_DisableProtectedRegisters()  # Disable protected write and take device out of INIT mode
 
+        # /* Set the interrupts we want to enable for MCAN */
+        self.mcan_ie = TCAN4x5x_MCAN_Interrupt_Enable()  # Remember to initialize to 0, or you'll get random garbage!
+        self.mcan_ie = 0x0
+        self.mcan_ie.RF0NE = 1  # RX FIFO 0 new message interrupt enable
 
-        #/* Set the interrupts we want to enable for MCAN */
-        TCAN4x5x_MCAN_Interrupt_Enable mcan_ie = {0}				# Remember to initialize to 0, or you'll get random garbage!
-        mcan_ie.RF0NE = 1											# RX FIFO 0 new message interrupt enable
+        self.TCAN4x5x_MCAN_ConfigureInterruptEnable(self.mcan_ie)  # Enable the appropriate registers
 
-        TCAN4x5x_MCAN_ConfigureInterruptEnable(&mcan_ie)			# Enable the appropriate registers
+        # /* Setup filters, this filter will mark any message with ID 0x055 as a priority message */
+        self.SID_ID = TCAN4x5x_MCAN_SID_Filter()
+        self.SID_ID = 0x0
+        self.SID_ID.SFT = TCAN4x5x_SID_SFT_CLASSIC  # SFT: Standard filter type. Configured as a classic filter
+        self.SID_ID.SFEC = TCAN4x5x_SID_SFEC_Values.TCAN4x5x_SID_SFEC_PRIORITYSTORERX0  # Standard filter element configuration, store it in RX fifo 0 as a priority message
+        self.SID_ID.SFID1 = 0x055  # SFID1 (Classic mode Filter)
+        self.SID_ID.SFID2 = 0x7FF  # SFID2 (Classic mode Mask)
+        self.TCAN4x5x_MCAN_WriteSIDFilter(0, self.SID_ID)  # Write to the MRAM
 
+        # /* Store ID 0x12345678 as a priority message */
+        self.XID_ID = TCAN4x5x_MCAN_XID_Filter()
+        self.XID_ID = 0x0
+        self.XID_ID.EFT = TCAN4x5x_XID_EFT_CLASSIC  # EFT
+        self.XID_ID.EFEC = TCAN4x5x_XID_EFEC_PRIORITYSTORERX0  # EFEC
+        self.XID_ID.EFID1 = 0x12345678  # EFID1 (Classic mode filter)
+        self.XID_ID.EFID2 = 0x1FFFFFFF  # EFID2 (Classic mode mask)
+        self.TCAN4x5x_MCAN_WriteXIDFilter(0, self.XID_ID)  # Write to the MRAM
 
-        #/* Setup filters, this filter will mark any message with ID 0x055 as a priority message */
-        TCAN4x5x_MCAN_SID_Filter SID_ID = {0}
-        SID_ID.SFT = TCAN4x5x_SID_SFT_CLASSIC						# SFT: Standard filter type. Configured as a classic filter
-        SID_ID.SFEC = TCAN4x5x_SID_SFEC_PRIORITYSTORERX0			# Standard filter element configuration, store it in RX fifo 0 as a priority message
-        SID_ID.SFID1 = 0x055										# SFID1 (Classic mode Filter)
-        SID_ID.SFID2 = 0x7FF										# SFID2 (Classic mode Mask)
-        TCAN4x5x_MCAN_WriteSIDFilter(0, &SID_ID)					# Write to the MRAM
-
-
-        #/* Store ID 0x12345678 as a priority message */
-        TCAN4x5x_MCAN_XID_Filter XID_ID = {0}
-        XID_ID.EFT = TCAN4x5x_XID_EFT_CLASSIC                      # EFT
-        XID_ID.EFEC = TCAN4x5x_XID_EFEC_PRIORITYSTORERX0           # EFEC
-        XID_ID.EFID1 = 0x12345678                                  # EFID1 (Classic mode filter)
-        XID_ID.EFID2 = 0x1FFFFFFF                                  # EFID2 (Classic mode mask)
-        TCAN4x5x_MCAN_WriteXIDFilter(0, &XID_ID)                   # Write to the MRAM
-
-        #/* Configure the TCAN4550 Non-CAN-related functions */
-        TCAN4x5x_DEV_CONFIG devConfig = {0}                        # Remember to initialize to 0, or you'll get random garbage!
-        devConfig.SWE_DIS = 0                                      # Keep Sleep Wake Error Enabled (it's a disable bit, not an enable)
-        devConfig.DEVICE_RESET = 0                                 # Not requesting a software reset
-        devConfig.WD_EN = 0                                        # Watchdog disabled
-        devConfig.nWKRQ_CONFIG = 0                                 # Mirror INH function (default)
-        devConfig.INH_DIS = 0                                      # INH enabled (default)
-        devConfig.GPIO1_GPO_CONFIG = TCAN4x5x_DEV_CONFIG_GPO1_MCAN_INT1    # MCAN nINT 1 (default)
-        devConfig.FAIL_SAFE_EN = 0                                 # Failsafe disabled (default)
-        devConfig.GPIO1_CONFIG = TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_GPO      # GPIO set as GPO (Default)
-        devConfig.WD_ACTION = TCAN4x5x_DEV_CONFIG_WDT_ACTION_nINT  # Watchdog set an interrupt (default)
-        devConfig.WD_BIT_RESET = 0                                 # Don't reset the watchdog
-        devConfig.nWKRQ_VOLTAGE = 0                                # Set nWKRQ to internal voltage rail (default)
-        devConfig.GPO2_CONFIG = TCAN4x5x_DEV_CONFIG_GPO2_NO_ACTION # GPO2 has no behavior (default)
-        devConfig.CLK_REF = 1                                      # Input crystal is a 40 MHz crystal (default)
-        devConfig.WAKE_CONFIG = TCAN4x5x_DEV_CONFIG_WAKE_BOTH_EDGES# Wake pin can be triggered by either edge (default)
-        TCAN4x5x_Device_Configure(&devConfig)                      # Configure the device with the above configuration
-
-        TCAN4x5x_Device_SetMode(TCAN4x5x_DEVICE_MODE_NORMAL)       # Set to normal mode, since configuration is done. This line turns on the transceiver
-
-        TCAN4x5x_MCAN_ClearInterruptsAll()                         # Resets all MCAN interrupts (does NOT include any SPIERR interrupts)
+        # /* Configure the TCAN4550 Non-CAN-related functions */
+        self.devConfig = TCAN4x5x_DEV_CONFIG()  # Remember to initialize to 0, or you'll get random garbage!
+        self.devConfig = 0x0
+        self.devConfig.SWE_DIS = 0  # Keep Sleep Wake Error Enabled (it's a disable bit, not an enable)
+        self.devConfig.DEVICE_RESET = 0  # Not requesting a software reset
+        self.devConfig.WD_EN = 0  # Watchdog disabled
+        self.devConfig.nWKRQ_CONFIG = 0  # Mirror INH function (default)
+        self.devConfig.INH_DIS = 0  # INH enabled (default)
+        self.devConfig.GPIO1_GPO_CONFIG = TCAN4x5x_DEV_CONFIG_GPO1_MCAN_INT1  # MCAN nINT 1 (default)
+        self.devConfig.FAIL_SAFE_EN = 0  # Failsafe disabled (default)
+        self.devConfig.GPIO1_CONFIG = TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_GPO  # GPIO set as GPO (Default)
+        self.devConfig.WD_ACTION = TCAN4x5x_DEV_CONFIG_WDT_ACTION_nINT  # Watchdog set an interrupt (default)
+        self.devConfig.WD_BIT_RESET = 0  # Don't reset the watchdog
+        self.devConfig.nWKRQ_VOLTAGE = 0  # Set nWKRQ to internal voltage rail (default)
+        self.devConfig.GPO2_CONFIG = TCAN4x5x_DEV_CONFIG_GPO2_NO_ACTION  # GPO2 has no behavior (default)
+        self.devConfig.CLK_REF = 1  # Input crystal is a 40 MHz crystal (default)
+        self.devConfig.WAKE_CONFIG = TCAN4x5x_DEV_CONFIG_WAKE_BOTH_EDGES  # Wake pin can be triggered by either edge (default)
+        self.TCAN4x5x_Device_Configure(self.devConfig)  # Configure the device with the above configuration
+        self.TCAN4x5x_Device_SetMode(
+            TCAN4x5x_DEVICE_MODE_NORMAL)  # Set to normal mode, since configuration is done. This line turns on the transceiver
+        self.TCAN4x5x_MCAN_ClearInterruptsAll()  # Resets all MCAN interrupts (does NOT include any SPIERR interrupts)
 
     def TCAN4x5x_Device_ClearInterrupts(self, ir):
         pass
@@ -162,42 +755,140 @@ class TCAN4550:
         pass
 
     def TCAN_read_32(self, address, data) -> uint32_t:
-        return 0
+        return uint32_t(0)
 
     def TCAN_read(self, address, data, no_words) -> uint32_t:
-        return 0
+        return uint32_t(0)
+
+    def TCAN4x5x_MCAN_EnableProtectedRegisters(self):
+        pass
+
+    def TCAN4x5x_MCAN_ConfigureCCCRRegister(self, cccrConfig):
+        pass
+
+    def TCAN4x5x_MCAN_ConfigureGlobalFilter(self, gfc):
+        pass
+
+    def TCAN4x5x_MCAN_ConfigureNominalTiming_Simple(self, TCANNomTiming):
+        pass
+
+    def TCAN4x5x_MCAN_ConfigureDataTiming_Simple(self, TCANDataTiming):
+        pass
+
+    def TCAN4x5x_MRAM_Clear(self):
+        pass
+
+    def TCAN4x5x_MRAM_Configure(self, MRAMConfiguration):
+        pass
+
+    def TCAN4x5x_MCAN_DisableProtectedRegisters(self):
+        pass
+
+    def TCAN4x5x_MCAN_ConfigureInterruptEnable(self, mcan_ie):
+        pass
+
+    def TCAN4x5x_MCAN_WriteSIDFilter(self, param, SID_ID):
+        pass
 
 
-class TCAN4x5x_GFC_NO_MATCH_BEHAVIOR(Enum):  # No Comments provided in original file
-    TCAN4x5x_GFC_ACCEPT_INTO_RXFIFO0 = 0,
-    TCAN4x5x_GFC_ACCEPT_INTO_RXFIFO1 = 1,
-    TCAN4x5x_GFC_REJECT = 2
+class TCAN4x5x_GFC_NO_MATCH_BEHAVIOR:  # No Comments provided in original file
+    (TCAN4x5x_GFC_ACCEPT_INTO_RXFIFO0,
+     TCAN4x5x_GFC_ACCEPT_INTO_RXFIFO1,
+     TCAN4x5x_GFC_REJECT) = map(uint8_t, range(3))
 
 
-class TCAN4x5x_MRAM_Element_Data_Size(Enum):
-    # 8 bytes of data payload
-    MRAM_8_Byte_Data = 0,
+class TCAN4x5x_MRAM_Element_Data_Size:
+    (  # 8 bytes of data payload
+        MRAM_8_Byte_Data,
 
-    # 12 bytes of data payload
-    MRAM_12_Byte_Data = 0x1,
+        # 12 bytes of data payload
+        MRAM_12_Byte_Data,
 
-    # 16 bytes of data payload
-    MRAM_16_Byte_Data = 0x2,
+        # 16 bytes of data payload
+        MRAM_16_Byte_Data,
 
-    # 20 bytes of data payload
-    MRAM_20_Byte_Data = 0x3,
+        # 20 bytes of data payload
+        MRAM_20_Byte_Data,
 
-    # 24 bytes of data payload
-    MRAM_24_Byte_Data = 0x4,
+        # 24 bytes of data payload
+        MRAM_24_Byte_Data,
 
-    # 32 bytes of data payload
-    MRAM_32_Byte_Data = 0x5,
+        # 32 bytes of data payload
+        MRAM_32_Byte_Data,
 
-    # 48 bytes of data payload
-    MRAM_48_Byte_Data = 0x6,
+        # 48 bytes of data payload
+        MRAM_48_Byte_Data,
 
-    # 64 bytes of data payload
-    MRAM_64_Byte_Data = 0x7
+        # 64 bytes of data payload
+        MRAM_64_Byte_Data) = map(uint8_t, range(8))
+
+
+class TCAN4x5x_SID_SFEC_Values:
+    (   # Disabled filter. This filter will do nothing if it matches a packet
+        TCAN4x5x_SID_SFEC_DISABLED,
+
+        # Store in RX FIFO 0 if the filter matches the incoming message
+        TCAN4x5x_SID_SFEC_STORERX0,
+
+        # Store in RX FIFO 1 if the filter matches the incoming message
+        TCAN4x5x_SID_SFEC_STORERX1,
+
+        # Reject the packet (do not store, do not notify MCU) if the filter matches the incoming message
+        TCAN4x5x_SID_SFEC_REJECTMATCH,
+
+        # Store in default location but set a high priority message interrupt if the filter matches the incoming message
+        TCAN4x5x_SID_SFEC_PRIORITY,
+
+        # Store in RX FIFO 0 and set a high priority message interrupt if the filter matches the incoming message
+        TCAN4x5x_SID_SFEC_PRIORITYSTORERX0,
+
+        # Store in RX FIFO 1 and set a high priority message interrupt if the filter matches the incoming message
+        TCAN4x5x_SID_SFEC_PRIORITYSTORERX1,
+
+        # Store in RX Buffer for debug if the filter matches the incoming message. SFT is ignored if this is selected.
+        TCAN4x5x_SID_SFEC_STORERXBUFORDEBUG) = map(uint8_t, range(7))
+
+
+class TCAN4x5x_SID_SFT_Values:
+    (   # Range Filter. SFID1 holds the start address, and SFID2 holds the end address. Any address in between will match
+        TCAN4x5x_SID_SFT_RANGE,
+
+        # Dual ID filter, where both SFID1 and SFID2 hold IDs that can match (must match exactly)
+        TCAN4x5x_SID_SFT_DUALID,
+
+        # Classic filter with SFID1 as the ID to match, and SFID2 as the bit mask that applies to SFID1
+        TCAN4x5x_SID_SFT_CLASSIC,
+
+        # Disabled filter. This filter will match nothing
+        TCAN4x5x_SID_SFT_DISABLED) = map(uint8_t, range(4))
+
+
+# END ENUMS
+#
+# Structs
+#
+class TCAN4x5x_MCAN_SID_Filter_bits(ctypes.Structure):
+    _fields_ = [
+        # @brief SFID2[10:0]
+        ("SFID2", uint16_t, 11),
+
+        # @brief Reserved
+        ("reserved", uint8_t, 5),
+
+        # @brief SFID1[10:0]
+        ("SFID1", uint16_t, 11),
+
+        # @brief SFEC[2:0]   Standard filter element configuration
+        ("SFEC", TCAN4x5x_SID_SFEC_Values, 3),
+
+        # @brief SFT Standard Filter Type
+        ("SFT", TCAN4x5x_SID_SFT_Values, 2)
+    ]
+
+
+class TCAN4x5x_MCAN_SID_Filter(ctypes.Union):
+    _fields_ = [("b", TCAN4x5x_MCAN_SID_Filter_bits),
+                ("word", uint32_t)]
 
 
 class TCAN4x5x_MCAN_Data_Timing_Simple(ctypes.Structure):
@@ -667,10 +1358,10 @@ class TCAN4x5x_Device_Interrupts_bits(ctypes.Structure):
         ("CANHBAT", uint8_t, 1),
 
         # DEV_IR[29] : CANHCANL, CANH and CANL shorted
-        ("CANHCANL", uint8_t, 1)
+        ("CANHCANL", uint8_t, 1),
 
         # DEV_IR[30] : CANBUSTERMOPEN, CAN Bus has termination point open
-        ("CANBUSTERMOPEN", uint8_t, 1)
+        ("CANBUSTERMOPEN", uint8_t, 1),
 
         # DEV_IR[31] : CANBUSNOM, CAN Bus is normal flag
         ("CANBUSNORM", uint8_t, 1)
@@ -740,7 +1431,7 @@ class TCAN4x5x_MCAN_CCCR_Config(ctypes.Union):
 class TCAN4x5x_MCAN_Global_Filter_Configuration_bits(ctypes.Structure):
     _fields_ = [
         # GFC[0] :  Reject Remote Frames for Extended IDs
-        ("RRFE", uint8_t, 1)
+        ("RRFE", uint8_t, 1),
 
         # GFC[1] :  Reject Remote Frames for Standard IDs
         ("RRFS", uint8_t, 1),
