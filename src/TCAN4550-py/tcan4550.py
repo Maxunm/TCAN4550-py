@@ -700,7 +700,7 @@ class TCAN4550:
         # /* Setup filters, this filter will mark any message with ID 0x055 as a priority message */
         self.SID_ID = TCAN4x5x_MCAN_SID_Filter()
         self.SID_ID.word = 0x0
-        self.SID_ID.b.SFT = TCAN4x5x_SID_SFT_CLASSIC  # SFT: Standard filter type. Configured as a classic filter
+        self.SID_ID.b.SFT = TCAN4x5x_SID_SFT_Values.TCAN4x5x_SID_SFT_CLASSIC  # SFT: Standard filter type. Configured as a classic filter
         self.SID_ID.b.SFEC = TCAN4x5x_SID_SFEC_Values.TCAN4x5x_SID_SFEC_PRIORITYSTORERX0  # Standard filter element configuration, store it in RX fifo 0 as a priority message
         self.SID_ID.b.SFID1 = 0x055  # SFID1 (Classic mode Filter)
         self.SID_ID.b.SFID2 = 0x7FF  # SFID2 (Classic mode Mask)
@@ -709,8 +709,8 @@ class TCAN4550:
         # /* Store ID 0x12345678 as a priority message */
         self.XID_ID = TCAN4x5x_MCAN_XID_Filter()
         self.XID_ID = 0x0
-        self.XID_ID.EFT = TCAN4x5x_XID_EFT_CLASSIC  # EFT
-        self.XID_ID.EFEC = TCAN4x5x_XID_EFEC_PRIORITYSTORERX0  # EFEC
+        self.XID_ID.EFT = TCAN4x5x_XID_EFT_Values.TCAN4x5x_XID_EFT_CLASSIC  # EFT
+        self.XID_ID.EFEC = TCAN4x5x_XID_EFEC_Values.TCAN4x5x_XID_EFEC_PRIORITYSTORERX0  # EFEC
         self.XID_ID.EFID1 = 0x12345678  # EFID1 (Classic mode filter)
         self.XID_ID.EFID2 = 0x1FFFFFFF  # EFID2 (Classic mode mask)
         self.TCAN4x5x_MCAN_WriteXIDFilter(0, self.XID_ID)  # Write to the MRAM
@@ -733,8 +733,7 @@ class TCAN4550:
         self.devConfig.b.CLK_REF = 1  # Input crystal is a 40 MHz crystal (default)
         self.devConfig.b.WAKE_CONFIG = TCAN4x5x_DEV_CONFIG_WAKE_CONFIG.TCAN4x5x_DEV_CONFIG_WAKE_BOTH_EDGES  # Wake pin can be triggered by either edge (default)
         self.TCAN4x5x_Device_Configure(self.devConfig)  # Configure the device with the above configuration
-        self.TCAN4x5x_Device_SetMode(
-            TCAN4x5x_DEVICE_MODE_NORMAL)  # Set to normal mode, since configuration is done. This line turns on the transceiver
+        self.TCAN4x5x_Device_SetMode(TCAN4x5x_Device_Mode_Enum.TCAN4x5x_DEVICE_MODE_NORMAL)  # Set to normal mode, since configuration is done. This line turns on the transceiver
         self.TCAN4x5x_MCAN_ClearInterruptsAll()  # Resets all MCAN interrupts (does NOT include any SPIERR interrupts)
 
     def TCAN4x5x_Device_ClearInterrupts(self, ir):
@@ -791,6 +790,22 @@ class TCAN4550:
     def TCAN4x5x_MCAN_WriteSIDFilter(self, param, SID_ID):
         pass
 
+    def TCAN4x5x_MCAN_WriteXIDFilter(self, param, XID_ID):
+        pass
+
+    def TCAN4x5x_Device_Configure(self, devConfig):
+        pass
+
+    def TCAN4x5x_MCAN_ClearInterruptsAll(self):
+        pass
+
+    def TCAN4x5x_Device_SetMode(self, TCAN4x5x_DEVICE_MODE):
+        pass
+
+
+class TCAN4x5x_Device_Mode_Enum:
+    (TCAN4x5x_DEVICE_MODE_NORMAL, TCAN4x5x_DEVICE_MODE_STANDBY, TCAN4x5x_DEVICE_MODE_SLEEP) = map(uint8_t, range(3))
+
 
 class TCAN4x5x_DEV_CONFIG_GPO1_CONFIG:
     (TCAN4x5x_DEV_CONFIG_GPO1_SPI_FAULT_INT,
@@ -829,43 +844,45 @@ class TCAN4x5x_GFC_NO_MATCH_BEHAVIOR:  # No Comments provided in original file
      TCAN4x5x_GFC_ACCEPT_INTO_RXFIFO1,
      TCAN4x5x_GFC_REJECT) = map(uint8_t, range(3))
 
+
 class TCAN4x5x_XID_EFT_Values:
-    (# Range filter from EFID1 to EFID2
-    TCAN4x5x_XID_EFT_RANGE,
+    (  # Range filter from EFID1 to EFID2
+        TCAN4x5x_XID_EFT_RANGE,
 
-    # Dual ID filter matches if the incoming ID matches EFID1 or EFID2
-    TCAN4x5x_XID_EFT_DUALID,
+        # Dual ID filter matches if the incoming ID matches EFID1 or EFID2
+        TCAN4x5x_XID_EFT_DUALID,
 
-    # Classic Filter, EFID1 is the ID/filter, and EFID2 is the mask
-    TCAN4x5x_XID_EFT_CLASSIC,
+        # Classic Filter, EFID1 is the ID/filter, and EFID2 is the mask
+        TCAN4x5x_XID_EFT_CLASSIC,
 
-    # Range filter from EFID1 to EFID2, The XIDAM mask is not applied
-    TCAN4x5x_XID_EFT_RANGENOMASK) = map(uint8_t, range(4))
+        # Range filter from EFID1 to EFID2, The XIDAM mask is not applied
+        TCAN4x5x_XID_EFT_RANGENOMASK) = map(uint8_t, range(4))
+
 
 class TCAN4x5x_XID_EFEC_Values:
-    (# Disabled filter. This filter will do nothing if it matches a packet
-    TCAN4x5x_XID_EFEC_DISABLED,
+    (  # Disabled filter. This filter will do nothing if it matches a packet
+        TCAN4x5x_XID_EFEC_DISABLED,
 
-    # Store in RX FIFO 0 if the filter matches the incoming message
-    TCAN4x5x_XID_EFEC_STORERX0,
+        # Store in RX FIFO 0 if the filter matches the incoming message
+        TCAN4x5x_XID_EFEC_STORERX0,
 
-    # Store in RX FIFO 1 if the filter matches the incoming message
-    TCAN4x5x_XID_EFEC_STORERX1,
+        # Store in RX FIFO 1 if the filter matches the incoming message
+        TCAN4x5x_XID_EFEC_STORERX1,
 
-    # Reject the packet (do not store, do not notify MCU) if the filter matches the incoming message
-    TCAN4x5x_XID_EFEC_REJECTMATCH,
+        # Reject the packet (do not store, do not notify MCU) if the filter matches the incoming message
+        TCAN4x5x_XID_EFEC_REJECTMATCH,
 
-    # Store in default location but set a high priority message interrupt if the filter matches the incoming message
-    TCAN4x5x_XID_EFEC_PRIORITY,
+        # Store in default location but set a high priority message interrupt if the filter matches the incoming message
+        TCAN4x5x_XID_EFEC_PRIORITY,
 
-    # Store in RX FIFO 0 and set a high priority message interrupt if the filter matches the incoming message
-    TCAN4x5x_XID_EFEC_PRIORITYSTORERX0,
+        # Store in RX FIFO 0 and set a high priority message interrupt if the filter matches the incoming message
+        TCAN4x5x_XID_EFEC_PRIORITYSTORERX0,
 
-    # Store in RX FIFO 1 and set a high priority message interrupt if the filter matches the incoming message
-    TCAN4x5x_XID_EFEC_PRIORITYSTORERX1,
+        # Store in RX FIFO 1 and set a high priority message interrupt if the filter matches the incoming message
+        TCAN4x5x_XID_EFEC_PRIORITYSTORERX1,
 
-    # Store in RX Buffer for debug if the filter matches the incoming message.
-    TCAN4x5x_XID_EFEC_STORERXBUFORDEBUG) = map(uint8_t, range(8))
+        # Store in RX Buffer for debug if the filter matches the incoming message.
+        TCAN4x5x_XID_EFEC_STORERXBUFORDEBUG) = map(uint8_t, range(8))
 
 
 class TCAN4x5x_MRAM_Element_Data_Size:
@@ -1633,3 +1650,110 @@ class TCAN4x5x_MCAN_XID_Filter(ctypes.Structure):
         # @brief SFT Standard Filter Type
         ("EFEC", TCAN4x5x_XID_EFEC_Values, 3)
     ]
+
+
+class TCAN4x5x_DEV_CONFIG_bits(ctypes.Structure):
+    _fields_ = [
+        # @brief DEV_MODE_PINS[0] : Test mode configuration. Reserved in this struct
+        # It is recommended to use the test mode function to enable or disable test mode rather than this struct
+        ("RESERVED0", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[1] : Sleep wake error disable.
+        # Setting this to 1 will disable the 4 minute timer that puts the part back to sleep if no activity is detected
+        ("SWE_DIS", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[2] : Device reset. Write a 1 to perform a reset on the part
+        ("DEVICE_RESET", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[3] : Watchdog Enable. Use the watchdog functions to control enabling the watchdog
+        ("WD_EN", uint8_t, 1),
+
+        # @brief Reserved
+        # @brief DEV_MODE_PINS[7:6] : Mode Selection. Use the mode functions to change the mode
+        ("RESERVED1", uint8_t, 4),
+
+        # @brief DEV_MODE_PINS[8] : nWKRQ Configuration
+        # 0: Mirrors INH function
+        # 1: Wake request interrupt
+        ("nWKRQ_CONFIG", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[9] : Inhibit pin disable
+        ("INH_DIS", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[11:10] : GPIO1 pin as a GPO function configuration
+        # Configures the behavior of GPIO1 if it is configured to be a GPO
+        # Available values are:
+        # TCAN4x5x_DEV_CONFIG_GPO1_SPI_FAULT_INT : Active low output for a SPIERR
+        # TCAN4x5x_DEV_CONFIG_GPO1_MCAN_INT1 : Active low output for MCAN_INT1 output (See MCAN ILE and ILS registers to use)
+        # TCAN4x5x_DEV_CONFIG_GPO1_UNDER_VOLTAGE_OR_THERMAL_INT : Active low output for any under voltage or over temp interrupt
+        ("GPIO1_GPO_CONFIG", TCAN4x5x_DEV_CONFIG_GPO1_CONFIG, 2),
+
+        # @brief Reserved
+        ("RESERVED2", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[13] : Fail safe mode enable. Excludes power up fail safe
+        ("FAIL_SAFE_EN", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[15:14] : GPIO1 configuration
+        # Configures the mode of the GPIO1 pin as an input or output
+        # Available values are:
+        # TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_GPO : Sets GPIO1 as an output. Be sure to see GPIO1_GPO_CONFIG field to set the behavior
+        # TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_WATCHDOG_INPUT : Sets GPIO1 as an input for the watchdog timer. Watchdog will need to be enabled
+        ("GPIO1_CONFIG", TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG, 2),
+
+        # @brief DEV_MODE_PINS[17:16] : Watchdog action. Defines the behavior of the watchdog timer when it times out
+        # Sets the behavior of the watchdog when it times out
+        # Available values are:
+        # TCAN4x5x_DEV_CONFIG_WDT_ACTION_nINT : Sets an interrupt flag and the interrupt pin will be pulled low
+        # TCAN4x5x_DEV_CONFIG_WDT_ACTION_PULSE_INH : Pulse INH low for ~300 ms then high
+        # TCAN4x5x_DEV_CONFIG_WDT_ACTION_PULSE_WDT_OUTPUT : Pulse the watchdog output pin low for ~300 ms and high
+        ("WD_ACTION", TCAN4x5x_DEV_CONFIG_WDT_ACTION, 2),
+
+
+        # @brief DEV_MODE_PINS[18] : Watchdog reset bit
+        # Write a 1 to reset the watchdog timer. It's recommended to use the other watchdog functions for this behavior
+        ("WD_BIT_RESET", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[19] : nWKRQ_VOLTAGE, set the voltage rail used by the nWKRQ pin
+        # Available values are:
+        # 0 [default] : Internal Voltage rail
+        # 1           : VIO Voltage rail
+        ("nWKRQ_VOLTAGE", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[21:20] : RESERVED. Use test mode functions to enable test modes
+        ("RESERVED3", uint8_t, 2),
+
+        # @brief DEV_MODE_PINS[23:22] : nWKRQ_VOLTAGE, set the voltage rail used by the nWKRQ pin
+        # Available values are:
+        # TCAN4x5x_DEV_CONFIG_GPO2_NO_ACTION  [default] : No action for GPO2
+        # TCAN4x5x_DEV_CONFIG_GPO2_MCAN_INT0 : Used as an output for MCAN INT0
+        # TCAN4x5x_DEV_CONFIG_GPO2_WATCHDOG : Used as a watchdog output
+        # TCAN4x5x_DEV_CONFIG_GPO2_MIRROR_INT : Mirror nINT pin
+        ("GPO2_CONFIG", TCAN4x5x_DEV_CONFIG_GPO2_CONFIG, 2),
+
+        # @brief DEV_MODE_PINS[26:24] : RESERVED
+        ("RESERVED4", uint8_t, 3),
+
+        # @brief DEV_MODE_PINS[27] : CLK_REF, used to tell the device what the input clock/crystal frequency is
+        # Available values are:
+        # 0           : 20 MHz
+        # 1 [default] : 40 MHz
+        ("CLK_REF", uint8_t, 1),
+
+        # @brief DEV_MODE_PINS[29:28] : RESERVED. Use watchdog functions to set watchdog parameters
+        ("RESERVED5", uint8_t, 2),
+
+
+        # brief DEV_MODE_PINS[31:30] : WAKE_CONFIG, used to configure the direction required to wake a part up
+        # Available values are:
+        # TCAN4x5x_DEV_CONFIG_WAKE_DISABLED             : Disabled. Wake pin is not used
+        # TCAN4x5x_DEV_CONFIG_WAKE_RISING_EDGE          : Low to high transition will wake the part
+        # TCAN4x5x_DEV_CONFIG_WAKE_FALLING_EDGE         : High to low transition will wake the part
+        # TCAN4x5x_DEV_CONFIG_WAKE_BOTH_EDGES [default] : Either transition will wake the part
+        ("WAKE_CONFIG", TCAN4x5x_DEV_CONFIG_WAKE_CONFIG, 2)
+    ]
+
+
+class TCAN4x5x_DEV_CONFIG(ctypes.Union):
+    _fields_ = [("b", TCAN4x5x_DEV_CONFIG_bits),
+                ("word", uint32_t)]
