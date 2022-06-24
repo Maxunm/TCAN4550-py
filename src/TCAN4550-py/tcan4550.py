@@ -614,11 +614,11 @@ class TCAN4550:
         self.TCAN_clearSPIerr()
 
         self.dev_ie = TCAN4x5x_device_interrupt_enable()
-        self.dev_ie = 0x0  # Initialize to 0 to all bits are set to 0.
+        self.dev_ie.word = 0x0  # Initialize to 0 to all bits are set to 0.
         self.TCAN_configure_interrupt_enable(self.dev_ie)  # Disable all non-MCAN related interrupts for simplicity
 
         self.dev_ir = TCAN4x5x_Device_Interrupts()
-        self.dev_ir = 0x0  # Setup a new MCAN IR object for easy interrupt checking
+        self.dev_ir.word = 0x0  # Setup a new MCAN IR object for easy interrupt checking
         self.TCAN_read_interrupts(
             self.dev_ir)  # Request that the struct be updated with current DEVICE (not MCAN) interrupt values
 
@@ -640,12 +640,13 @@ class TCAN4550:
 
         # Configure the MCAN core settings
         self.cccrConfig = TCAN4x5x_MCAN_CCCR_Config()
-        self.cccrConfig = 0x0  # Remember to initialize to 0, or you'll get random garbage!
+        self.cccrConfig.word = 0x0  # Remember to initialize to 0, or you'll get random garbage!
         self.cccrConfig.b.FDOE = 1  # CAN FD mode enable
         self.cccrConfig.b.BRSE = 1  # CAN FD Bit rate switch enable
 
         # Configure the default CAN packet filtering settings
         self.gfc = TCAN4x5x_MCAN_Global_Filter_Configuration()
+        self.gfc.word = 0x0
         self.gfc.b.RRFE = 1  # Reject remote frames (TCAN4x5x doesn't support this)
         self.gfc.b.RRFS = 1  # Reject remote frames (TCAN4x5x doesn't support this)
         self.gfc.b.ANFE = TCAN4x5x_GFC_NO_MATCH_BEHAVIOR.TCAN4x5x_GFC_ACCEPT_INTO_RXFIFO0.value  # Default behavior if incoming message doesn't match a filter is to accept into RXFIO0 for extended ID messages (29 bit IDs)
@@ -662,18 +663,18 @@ class TCAN4550:
           - 2 Transmit buffers supporting up to 64 bytes of data payload
         '''
         self.MRAMConfiguration = TCAN4x5x_MRAM_Config()
-        self.MRAMConfiguration = 0x0
-        self.MRAMConfiguration.XIDNumElements = 1  # Extended ID number of elements, you MUST have a filter written to MRAM for each element defined
-        self.MRAMConfiguration.SIDNumElements = 1  # Standard ID number of elements, you MUST have a filter written to MRAM for each element defined
-        self.MRAMConfiguration.Rx0NumElements = 5  # RX0 Number of elements
-        self.MRAMConfiguration.Rx0ElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX0 data payload size
-        self.MRAMConfiguration.Rx1NumElements = 0  # RX1 number of elements
-        self.MRAMConfiguration.Rx1ElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX1 data payload size
-        self.MRAMConfiguration.RxBufNumElements = 0  # RX buffer number of elements
-        self.MRAMConfiguration.RxBufElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX buffer data payload size
-        self.MRAMConfiguration.TxEventFIFONumElements = 0  # TX Event FIFO number of elements
-        self.MRAMConfiguration.TxBufferNumElements = 2  # TX buffer number of elements
-        self.MRAMConfiguration.TxBufferElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # TX buffer data payload size
+        self.MRAMConfiguration.word = 0x0
+        self.MRAMConfiguration.b.XIDNumElements = 1  # Extended ID number of elements, you MUST have a filter written to MRAM for each element defined
+        self.MRAMConfiguration.b.SIDNumElements = 1  # Standard ID number of elements, you MUST have a filter written to MRAM for each element defined
+        self.MRAMConfiguration.b.Rx0NumElements = 5  # RX0 Number of elements
+        self.MRAMConfiguration.b.Rx0ElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX0 data payload size
+        self.MRAMConfiguration.b.Rx1NumElements = 0  # RX1 number of elements
+        self.MRAMConfiguration.b.Rx1ElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX1 data payload size
+        self.MRAMConfiguration.b.RxBufNumElements = 0  # RX buffer number of elements
+        self.MRAMConfiguration.b.RxBufElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # RX buffer data payload size
+        self.MRAMConfiguration.b.TxEventFIFONumElements = 0  # TX Event FIFO number of elements
+        self.MRAMConfiguration.b.TxBufferNumElements = 2  # TX buffer number of elements
+        self.MRAMConfiguration.b.TxBufferElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # TX buffer data payload size
 
         # /* Configure the MCAN core with the settings above, the changes in this block are write protected registers,      *
         # * so it makes the most sense to do them all at once, so we only unlock and lock once                             */
@@ -691,18 +692,18 @@ class TCAN4550:
 
         # /* Set the interrupts we want to enable for MCAN */
         self.mcan_ie = TCAN4x5x_MCAN_Interrupt_Enable()  # Remember to initialize to 0, or you'll get random garbage!
-        self.mcan_ie = 0x0
-        self.mcan_ie.RF0NE = 1  # RX FIFO 0 new message interrupt enable
+        self.mcan_ie.word = 0x0
+        self.mcan_ie.b.RF0NE = 1  # RX FIFO 0 new message interrupt enable
 
         self.TCAN4x5x_MCAN_ConfigureInterruptEnable(self.mcan_ie)  # Enable the appropriate registers
 
         # /* Setup filters, this filter will mark any message with ID 0x055 as a priority message */
         self.SID_ID = TCAN4x5x_MCAN_SID_Filter()
-        self.SID_ID = 0x0
-        self.SID_ID.SFT = TCAN4x5x_SID_SFT_CLASSIC  # SFT: Standard filter type. Configured as a classic filter
-        self.SID_ID.SFEC = TCAN4x5x_SID_SFEC_Values.TCAN4x5x_SID_SFEC_PRIORITYSTORERX0  # Standard filter element configuration, store it in RX fifo 0 as a priority message
-        self.SID_ID.SFID1 = 0x055  # SFID1 (Classic mode Filter)
-        self.SID_ID.SFID2 = 0x7FF  # SFID2 (Classic mode Mask)
+        self.SID_ID.word = 0x0
+        self.SID_ID.b.SFT = TCAN4x5x_SID_SFT_CLASSIC  # SFT: Standard filter type. Configured as a classic filter
+        self.SID_ID.b.SFEC = TCAN4x5x_SID_SFEC_Values.TCAN4x5x_SID_SFEC_PRIORITYSTORERX0  # Standard filter element configuration, store it in RX fifo 0 as a priority message
+        self.SID_ID.b.SFID1 = 0x055  # SFID1 (Classic mode Filter)
+        self.SID_ID.b.SFID2 = 0x7FF  # SFID2 (Classic mode Mask)
         self.TCAN4x5x_MCAN_WriteSIDFilter(0, self.SID_ID)  # Write to the MRAM
 
         # /* Store ID 0x12345678 as a priority message */
@@ -716,21 +717,21 @@ class TCAN4550:
 
         # /* Configure the TCAN4550 Non-CAN-related functions */
         self.devConfig = TCAN4x5x_DEV_CONFIG()  # Remember to initialize to 0, or you'll get random garbage!
-        self.devConfig = 0x0
-        self.devConfig.SWE_DIS = 0  # Keep Sleep Wake Error Enabled (it's a disable bit, not an enable)
-        self.devConfig.DEVICE_RESET = 0  # Not requesting a software reset
-        self.devConfig.WD_EN = 0  # Watchdog disabled
-        self.devConfig.nWKRQ_CONFIG = 0  # Mirror INH function (default)
-        self.devConfig.INH_DIS = 0  # INH enabled (default)
-        self.devConfig.GPIO1_GPO_CONFIG = TCAN4x5x_DEV_CONFIG_GPO1_MCAN_INT1  # MCAN nINT 1 (default)
-        self.devConfig.FAIL_SAFE_EN = 0  # Failsafe disabled (default)
-        self.devConfig.GPIO1_CONFIG = TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_GPO  # GPIO set as GPO (Default)
-        self.devConfig.WD_ACTION = TCAN4x5x_DEV_CONFIG_WDT_ACTION_nINT  # Watchdog set an interrupt (default)
-        self.devConfig.WD_BIT_RESET = 0  # Don't reset the watchdog
-        self.devConfig.nWKRQ_VOLTAGE = 0  # Set nWKRQ to internal voltage rail (default)
-        self.devConfig.GPO2_CONFIG = TCAN4x5x_DEV_CONFIG_GPO2_NO_ACTION  # GPO2 has no behavior (default)
-        self.devConfig.CLK_REF = 1  # Input crystal is a 40 MHz crystal (default)
-        self.devConfig.WAKE_CONFIG = TCAN4x5x_DEV_CONFIG_WAKE_BOTH_EDGES  # Wake pin can be triggered by either edge (default)
+        self.devConfig.word = 0x0
+        self.devConfig.b.SWE_DIS = 0  # Keep Sleep Wake Error Enabled (it's a disable bit, not an enable)
+        self.devConfig.b.DEVICE_RESET = 0  # Not requesting a software reset
+        self.devConfig.b.WD_EN = 0  # Watchdog disabled
+        self.devConfig.b.nWKRQ_CONFIG = 0  # Mirror INH function (default)
+        self.devConfig.b.INH_DIS = 0  # INH enabled (default)
+        self.devConfig.b.GPIO1_GPO_CONFIG = TCAN4x5x_DEV_CONFIG_GPO1_CONFIG.TCAN4x5x_DEV_CONFIG_GPO1_MCAN_INT1  # MCAN nINT 1 (default)
+        self.devConfig.b.FAIL_SAFE_EN = 0  # Failsafe disabled (default)
+        self.devConfig.b.GPIO1_CONFIG = TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG.TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_GPO  # GPIO set as GPO (Default)
+        self.devConfig.b.WD_ACTION = TCAN4x5x_DEV_CONFIG_WDT_ACTION.TCAN4x5x_DEV_CONFIG_WDT_ACTION_nINT  # Watchdog set an interrupt (default)
+        self.devConfig.b.WD_BIT_RESET = 0  # Don't reset the watchdog
+        self.devConfig.b.nWKRQ_VOLTAGE = 0  # Set nWKRQ to internal voltage rail (default)
+        self.devConfig.b.GPO2_CONFIG = TCAN4x5x_DEV_CONFIG_GPO2_CONFIG.TCAN4x5x_DEV_CONFIG_GPO2_NO_ACTION  # GPO2 has no behavior (default)
+        self.devConfig.b.CLK_REF = 1  # Input crystal is a 40 MHz crystal (default)
+        self.devConfig.b.WAKE_CONFIG = TCAN4x5x_DEV_CONFIG_WAKE_CONFIG.TCAN4x5x_DEV_CONFIG_WAKE_BOTH_EDGES  # Wake pin can be triggered by either edge (default)
         self.TCAN4x5x_Device_Configure(self.devConfig)  # Configure the device with the above configuration
         self.TCAN4x5x_Device_SetMode(
             TCAN4x5x_DEVICE_MODE_NORMAL)  # Set to normal mode, since configuration is done. This line turns on the transceiver
@@ -791,10 +792,80 @@ class TCAN4550:
         pass
 
 
+class TCAN4x5x_DEV_CONFIG_GPO1_CONFIG:
+    (TCAN4x5x_DEV_CONFIG_GPO1_SPI_FAULT_INT,
+     TCAN4x5x_DEV_CONFIG_GPO1_MCAN_INT1,
+     TCAN4x5x_DEV_CONFIG_GPO1_UNDER_VOLTAGE_OR_THERMAL_INT) = map(uint8_t, range(3))
+
+
+class TCAN4x5x_DEV_CONFIG_WDT_ACTION:
+    (TCAN4x5x_DEV_CONFIG_WDT_ACTION_nINT,
+     TCAN4x5x_DEV_CONFIG_WDT_ACTION_PULSE_INH,
+     TCAN4x5x_DEV_CONFIG_WDT_ACTION_PULSE_WDT_OUTPUT) = map(uint8_t, range(3))
+
+
+class TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG:
+    (TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_GPO,
+     reserved,
+     TCAN4x5x_DEV_CONFIG_GPIO1_CONFIG_WATCHDOG_INPUT) = map(uint8_t, range(3))
+
+
+class TCAN4x5x_DEV_CONFIG_GPO2_CONFIG:
+    (TCAN4x5x_DEV_CONFIG_GPO2_NO_ACTION,
+     TCAN4x5x_DEV_CONFIG_GPO2_MCAN_INT0,
+     TCAN4x5x_DEV_CONFIG_GPO2_WATCHDOG,
+     TCAN4x5x_DEV_CONFIG_GPO2_MIRROR_INT) = map(uint8_t, range(4))
+
+
+class TCAN4x5x_DEV_CONFIG_WAKE_CONFIG:
+    (TCAN4x5x_DEV_CONFIG_WAKE_DISABLED,
+     TCAN4x5x_DEV_CONFIG_WAKE_RISING_EDGE,
+     TCAN4x5x_DEV_CONFIG_WAKE_FALLING_EDGE,
+     TCAN4x5x_DEV_CONFIG_WAKE_BOTH_EDGES) = map(uint8_t, range(4))
+
+
 class TCAN4x5x_GFC_NO_MATCH_BEHAVIOR:  # No Comments provided in original file
     (TCAN4x5x_GFC_ACCEPT_INTO_RXFIFO0,
      TCAN4x5x_GFC_ACCEPT_INTO_RXFIFO1,
      TCAN4x5x_GFC_REJECT) = map(uint8_t, range(3))
+
+class TCAN4x5x_XID_EFT_Values:
+    (# Range filter from EFID1 to EFID2
+    TCAN4x5x_XID_EFT_RANGE,
+
+    # Dual ID filter matches if the incoming ID matches EFID1 or EFID2
+    TCAN4x5x_XID_EFT_DUALID,
+
+    # Classic Filter, EFID1 is the ID/filter, and EFID2 is the mask
+    TCAN4x5x_XID_EFT_CLASSIC,
+
+    # Range filter from EFID1 to EFID2, The XIDAM mask is not applied
+    TCAN4x5x_XID_EFT_RANGENOMASK) = map(uint8_t, range(4))
+
+class TCAN4x5x_XID_EFEC_Values:
+    (# Disabled filter. This filter will do nothing if it matches a packet
+    TCAN4x5x_XID_EFEC_DISABLED,
+
+    # Store in RX FIFO 0 if the filter matches the incoming message
+    TCAN4x5x_XID_EFEC_STORERX0,
+
+    # Store in RX FIFO 1 if the filter matches the incoming message
+    TCAN4x5x_XID_EFEC_STORERX1,
+
+    # Reject the packet (do not store, do not notify MCU) if the filter matches the incoming message
+    TCAN4x5x_XID_EFEC_REJECTMATCH,
+
+    # Store in default location but set a high priority message interrupt if the filter matches the incoming message
+    TCAN4x5x_XID_EFEC_PRIORITY,
+
+    # Store in RX FIFO 0 and set a high priority message interrupt if the filter matches the incoming message
+    TCAN4x5x_XID_EFEC_PRIORITYSTORERX0,
+
+    # Store in RX FIFO 1 and set a high priority message interrupt if the filter matches the incoming message
+    TCAN4x5x_XID_EFEC_PRIORITYSTORERX1,
+
+    # Store in RX Buffer for debug if the filter matches the incoming message.
+    TCAN4x5x_XID_EFEC_STORERXBUFORDEBUG) = map(uint8_t, range(8))
 
 
 class TCAN4x5x_MRAM_Element_Data_Size:
@@ -824,7 +895,7 @@ class TCAN4x5x_MRAM_Element_Data_Size:
 
 
 class TCAN4x5x_SID_SFEC_Values:
-    (   # Disabled filter. This filter will do nothing if it matches a packet
+    (  # Disabled filter. This filter will do nothing if it matches a packet
         TCAN4x5x_SID_SFEC_DISABLED,
 
         # Store in RX FIFO 0 if the filter matches the incoming message
@@ -850,7 +921,7 @@ class TCAN4x5x_SID_SFEC_Values:
 
 
 class TCAN4x5x_SID_SFT_Values:
-    (   # Range Filter. SFID1 holds the start address, and SFID2 holds the end address. Any address in between will match
+    (  # Range Filter. SFID1 holds the start address, and SFID2 holds the end address. Any address in between will match
         TCAN4x5x_SID_SFT_RANGE,
 
         # Dual ID filter, where both SFID1 and SFID2 hold IDs that can match (must match exactly)
@@ -1542,3 +1613,23 @@ class TCAN4x5x_device_interrupt_enable_bits(ctypes.BigEndianStructure):
 class TCAN4x5x_device_interrupt_enable(ctypes.Union):
     _fields_ = [("b", TCAN4x5x_device_interrupt_enable_bits),
                 ("word", uint32_t)]
+
+
+# @brief Extended ID filter struct
+class TCAN4x5x_MCAN_XID_Filter(ctypes.Structure):
+    _fields_ = [
+        # @brief EFID2[28:0]
+        ("EFID2", uint32_t, 29),
+
+        # @brief Reserved
+        ("reserved", uint8_t, 1),
+
+        # @brief EFT[1:0]
+        ("EFT", TCAN4x5x_XID_EFT_Values, 2),
+
+        # EFID1[28:0]
+        ("EFID1", uint32_t, 29),
+
+        # @brief SFT Standard Filter Type
+        ("EFEC", TCAN4x5x_XID_EFEC_Values, 3)
+    ]
