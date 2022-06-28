@@ -609,7 +609,9 @@ class TCAN4550:
     # Reserved											0x80-00
     REG_BITS_DEVICE_IE_MASK                     =0x7F69D700 #! This mask is the bitwise-inverse of the 0x0830 IE register's reserved bits. A reserved bit is read as high always. This masks the reserved bits out.
 
-    def __init__(self, bus: int, device: int) -> None:
+    def __init__(self, bus: int, device: int, verify_writes: bool) -> None:
+        # Verify Writes veriable 
+        self.TCAN4x5x_DEVICE_VERIFY_CONFIGURATION_WRITES = verify_writes
         # SPI initialization
         self.spi = spidev.SpiDev(bus, device)
         self.spi.max_speed_hz = 2000000
@@ -628,8 +630,7 @@ class TCAN4550:
 
         self.dev_ir = TCAN4x5x_Device_Interrupts()
         self.dev_ir.word = 0x0  # Setup a new MCAN IR object for easy interrupt checking
-        self.TCAN_read_interrupts(
-            self.dev_ir)  # Request that the struct be updated with current DEVICE (not MCAN) interrupt values
+        dev_ir = self.TCAN4x5x_Device_ReadInterrupts()  # Request that the struct be updated with current DEVICE (not MCAN) interrupt values
 
         if self.dev_ir.b.PWRON:
             self.TCAN4x5x_Device_ClearInterrupts(self.dev_ir)
@@ -746,24 +747,32 @@ class TCAN4550:
         self.TCAN4x5x_MCAN_ClearInterruptsAll()  # Resets all MCAN interrupts (does NOT include any SPIERR interrupts)
 
     def TCAN4x5x_Device_ClearInterrupts(self, ir):
-        self.TCAN_write_32(REG_DEV_IR, ir.word)
+        self.AHB_WRITE_32(TCAN4550.REG_DEV_IR, ir.word)
 
     def TCAN_clearSPIerr(self) -> None:
-        pass
+        self.AHB_WRITE_32(TCAN4550.REG_SPI_STATUS, 0xFFFFFFFF)
 
-    def TCAN_configure_interrupt_enable(self, ie) -> bool:
+    def TCAN4x5x_Device_ConfigureInterruptEnable(self, ie) -> bool:
+        self.AHB_WRITE_32(TCAN4550.REG_DEV_IE, ie.word);
+        if self.TCAN4x5x_DEVICE_VERIFY_CONFIGURATION_WRITES:
+                # Check to see if the write was successful.
+            readValue = self.AHB_READ_32(TCAN4550.REG_DEV_IE)       # Read value
+            readValue = readValue & TCAN4550.REG_BITS_DEVICE_IE_MASK               # Apply mask to ignore reserved
+            if readValue != (ie.word & TCAN4550.REG_BITS_DEVICE_IE_MASK):
+                return False
         return True
 
-    def TCAN_read_interrupts(self, ir) -> bool:
-        return True
+    def TCAN4x5x_Device_ReadInterrupts(self):
+        ir = TCAN4x5x_Device_Interrupts()
+        ir.word = self.AHB_READ_32(TCAN4550.REG_DEV_IR)
 
-    def TCAN_write_32(self, address, data) -> None:
+    def AHB_WRITE_32(self, address, data) -> None:
         pass
 
     def TCAN_write(self, data, address, no_words) -> None:
         pass
 
-    def TCAN_read_32(self, address, data) -> uint32_t:
+    def AHB_READ_32(self, address, data) -> uint32_t:
         return uint32_t(0)
 
     def TCAN_read(self, address, data, no_words) -> uint32_t:
