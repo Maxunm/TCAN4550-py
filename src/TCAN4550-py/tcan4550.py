@@ -81,8 +81,8 @@ class TCAN4550:
         self.MRAMConfiguration.b.TxBufferNumElements = 2  # TX buffer number of elements
         self.MRAMConfiguration.b.TxBufferElementSize = TCAN4x5x_MRAM_Element_Data_Size.MRAM_64_Byte_Data  # TX buffer data payload size
 
-        # /* Configure the MCAN core with the settings above, the changes in this block are write protected registers,      *
-        # * so it makes the most sense to do them all at once, so we only unlock and lock once                             */
+        # Configure the MCAN core with the settings above, the changes in this block are write protected registers,      #
+        # so it makes the most sense to do them all at once, so we only unlock and lock once                             #/
 
         self.TCAN4x5x_MCAN_EnableProtectedRegisters()  # Start by making protected registers accessible
         self.TCAN4x5x_MCAN_ConfigureCCCRRegister(self.cccrConfig)  # Enable FD mode and Bit rate switching
@@ -95,14 +95,14 @@ class TCAN4550:
             self.MRAMConfiguration)  # Set up the applicable registers related to MRAM configuration
         self.TCAN4x5x_MCAN_DisableProtectedRegisters()  # Disable protected write and take device out of INIT mode
 
-        # /* Set the interrupts we want to enable for MCAN */
+        # Set the interrupts we want to enable for MCAN #/
         self.mcan_ie = TCAN4x5x_MCAN_Interrupt_Enable()  # Remember to initialize to 0, or you'll get random garbage!
         self.mcan_ie.word = 0x0
         self.mcan_ie.b.RF0NE = 1  # RX FIFO 0 new message interrupt enable
 
         self.TCAN4x5x_MCAN_ConfigureInterruptEnable(self.mcan_ie)  # Enable the appropriate registers
 
-        # /* Setup filters, this filter will mark any message with ID 0x055 as a priority message */
+        # Setup filters, this filter will mark any message with ID 0x055 as a priority message #/
         self.SID_ID = TCAN4x5x_MCAN_SID_Filter()
         self.SID_ID.word = 0x0
         self.SID_ID.b.SFT = TCAN4x5x_SID_SFT_Values.TCAN4x5x_SID_SFT_CLASSIC  # SFT: Standard filter type. Configured as a classic filter
@@ -111,7 +111,7 @@ class TCAN4550:
         self.SID_ID.b.SFID2 = 0x7FF  # SFID2 (Classic mode Mask)
         self.TCAN4x5x_MCAN_WriteSIDFilter(0, self.SID_ID)  # Write to the MRAM
 
-        # /* Store ID 0x12345678 as a priority message */
+        # Store ID 0x12345678 as a priority message #/
         self.XID_ID = TCAN4x5x_MCAN_XID_Filter()
         self.XID_ID = 0x0
         self.XID_ID.EFT = TCAN4x5x_XID_EFT_Values.TCAN4x5x_XID_EFT_CLASSIC  # EFT
@@ -120,7 +120,7 @@ class TCAN4550:
         self.XID_ID.EFID2 = 0x1FFFFFFF  # EFID2 (Classic mode mask)
         self.TCAN4x5x_MCAN_WriteXIDFilter(0, self.XID_ID)  # Write to the MRAM
 
-        # /* Configure the TCAN4550 Non-CAN-related functions */
+        # Configure the TCAN4550 Non-CAN-related functions #/
         self.devConfig = TCAN4x5x_DEV_CONFIG()  # Remember to initialize to 0, or you'll get random garbage!
         self.devConfig.word = 0x0
         self.devConfig.b.SWE_DIS = 0  # Keep Sleep Wake Error Enabled (it's a disable bit, not an enable)
@@ -143,12 +143,26 @@ class TCAN4550:
         self.TCAN4x5x_MCAN_ClearInterruptsAll()  # Resets all MCAN interrupts (does NOT include any SPIERR interrupts)
 
     def TCAN4x5x_Device_ClearInterrupts(self, ir):
+        """Clear the device interrupts
+
+        Will attempt to clear any interrupts that are marked as a '1' in the passed **TCAN4x5x_Device_Interrupts** struct
+        :param
+            ir: is a **TCAN4x5x_Device_Interrupts** struct containing the interrupt bit fields that will be updated
+        """
         self.AHB_WRITE_32(REG_DEV_IR, ir.word)
 
     def TCAN_clearSPIerr(self) -> None:
+        """Clear a SPIERR flag that may be set"""
         self.AHB_WRITE_32(REG_SPI_STATUS, 0xFFFFFFFF)
 
     def TCAN4x5x_Device_ConfigureInterruptEnable(self, ie) -> bool:
+        """Configures the device interrupt enable register
+
+        Configures the device interrupt enable register based on the passed **TCAN4x5x_Device_Interrupt_Enable** struct
+
+        :param ie: is a **TCAN4x5x_Device_Interrupt_Enable** struct containing the desired enable interrupt bits
+        :return: True if configuration successfully done, False if not
+        """
         self.AHB_WRITE_32(REG_DEV_IE, ie.word)
         if self.TCAN4x5x_DEVICE_VERIFY_CONFIGURATION_WRITES:
             # Check to see if the write was successful.
@@ -175,7 +189,14 @@ class TCAN4550:
     def TCAN_read(self, address, no_words) -> uint32_t:
         return uint32_t(0)
 
-    def TCAN4x5x_MCAN_EnableProtectedRegisters(self):
+    def TCAN4x5x_MCAN_EnableProtectedRegisters(self) -> bool:
+        """ Enable Protected MCAN Registers
+
+        Attempts to enable CCR.CCE and CCR.INIT to allow writes to protected registers, needed for MCAN configuration
+
+        Returns:
+            bool: True if successfully enabled, otherwise return False
+        """
         pass
 
     def TCAN4x5x_MCAN_ConfigureCCCRRegister(self, cccrConfig):
