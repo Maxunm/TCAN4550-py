@@ -160,7 +160,9 @@ class TCAN4550:
 
         Configures the device interrupt enable register based on the passed **TCAN4x5x_Device_Interrupt_Enable** struct
 
-        :param ie: is a **TCAN4x5x_Device_Interrupt_Enable** struct containing the desired enable interrupt bits
+        :param 
+            ie: is a **TCAN4x5x_Device_Interrupt_Enable** struct containing the desired enable interrupt bits
+            
         :return: True if configuration successfully done, False if not
         """
         self.AHB_WRITE_32(REG_DEV_IE, ie.word)
@@ -173,17 +175,42 @@ class TCAN4550:
         return True
 
     def TCAN4x5x_Device_ReadInterrupts(self) -> TCAN4x5x_Device_Interrupts:
+        """Read the device interrupts
+        
+        Reads the device interrupts and updates a **TCAN4x5x_Device_Interrupts** struct that is passed to the function
+        
+        :param
+            ir: is a pointer to a **TCAN4x5x_Device_Interrupts** struct containing the interrupt bit fields that will be updated
+        """
         ir = TCAN4x5x_Device_Interrupts()
         ir.word = self.AHB_READ_32(REG_DEV_IR)
         return ir
 
     def AHB_WRITE_32(self, address, data) -> None:
+        """Single word write
+
+         :param
+            address A 16-bit address of the destination register
+         
+         :param
+            data A 32-bit word of data to write to the destination register
+
+        """
         self.TCAN_write(data, address, 1)
 
     def TCAN_write(self, data, address, no_words) -> None:
         pass
 
     def AHB_READ_32(self, address) -> uint32_t:
+        """Single word read
+
+         :param
+            address A 16-bit address of the source register
+
+         :return
+            Returns 32-bit word of data from source register
+
+        """
         return self.TCAN_read(address, 1)
 
     def TCAN_read(self, address, no_words) -> uint32_t:
@@ -200,42 +227,192 @@ class TCAN4550:
         pass
 
     def TCAN4x5x_MCAN_ConfigureCCCRRegister(self, cccrConfig):
+        """Configure the MCAN CCCR Register
+        
+        Configures the bits of the CCCR register to match the CCCR config struct
+        
+        warning:: This function writes to protected MCAN registers
+        
+        note:: Requires that protected registers have been unlocked using **TCAN4x5x_MCAN_EnableProtectedRegisters()** and **TCAN4x5x_MCAN_DisableProtectedRegisters()** be used to lock the registers after configuration
+
+        :param
+            *cccrConfig is a pointer to a **TCAN4x5x_MCAN_CCCR_Config** struct containing the configuration bits
+        returns:
+            true if successfully enabled, otherwise return false
+        """
         pass
 
     def TCAN4x5x_MCAN_ConfigureGlobalFilter(self, gfc):
+        """Configures the MCAN global filter configuration register, using the passed Global Filter Configuration struct.
+ 
+        Configures the default behavior of the MCAN controller when receiving messages. This can include accepting or rejecting CAN messages by default.
+
+        warning:: This function writes to protected MCAN registers
+        
+        note:: Requires that protected registers have been unlocked using **TCAN4x5x_MCAN_EnableProtectedRegisters()** and **TCAN4x5x_MCAN_DisableProtectedRegisters()** be used to lock the registers after configuration
+
+        :param 
+            *gfc: is a pointer of a **TCAN4x5x_MCAN_Global_Filter_Configuration** struct containing the register values
+
+        return:
+            true if successfully enabled, otherwise return false
+        """
         pass
 
     def TCAN4x5x_MCAN_ConfigureNominalTiming_Simple(self, TCANNomTiming):
+        """Writes the MCAN nominal timing settings, using the simple nominal timing struct
+        
+         * Writes the data timing information to MCAN using the input from the ***nomTiming** pointer
+         
+         warning::This function writes to protected MCAN registers
+         
+         note::Requires that protected registers have been unlocked using **TCAN4x5x_MCAN_EnableProtectedRegisters()** and **TCAN4x5x_MCAN_DisableProtectedRegisters()** be used to lock the registers after configuration
+         
+         :param
+            *nomTiming is a pointer of a **TCAN4x5x_MCAN_Nominal_Timing_Simple** struct containing the simplified nominal timing information
+        return:
+            ** true** if successfully enabled, otherwise return false
+        """
         pass
 
     def TCAN4x5x_MCAN_ConfigureDataTiming_Simple(self, TCANDataTiming):
+        """Writes the MCAN data time settings, using the simple data timing struct
+        
+         Writes the data timing information to MCAN using the input from the ***dataTiming** pointer
+         
+         warning:: This function writes to protected MCAN registers
+         
+         note::Requires that protected registers have been unlocked using **TCAN4x5x_MCAN_EnableProtectedRegisters()** and  **TCAN4x5x_MCAN_DisableProtectedRegisters()** be used to lock the registers after configuration
+
+        :param
+            *dataTiming is a pointer of a **TCAN4x5x_MCAN_Data_Timing_Simple** struct containing the simplified data timing information
+            
+        :return
+            true if successfully enabled, otherwise return false
+
+        """
         pass
 
     def TCAN4x5x_MRAM_Clear(self):
+        """Clear (Zero-fill) the contents of MRAM
+        
+         Write 0s to every address in MRAM. Useful for initializing the MRAM to known values during initial configuration so that accidental ECC errors do not happen
+
+        """
         pass
 
     def TCAN4x5x_MRAM_Configure(self, MRAMConfiguration):
+        """Configures the MRAM registers
+
+         Uses the ***MRAMConfig** pointer to set up the various sections of the MRAM memory space.
+         There are several different elements that may be configured in the MRAM, including their number of elements, as well as size of elements.
+         This function will automatically generate the start addresses for each of the appropriate MRAM sections, attempting to place them immediately back-to-back.
+         This function will check for over allocated memory conditions, and return false if this is found to be the case.
+
+         warning:: This function writes to protected MCAN registers
+         
+         note:: Requires that protected registers have been unlocked using **TCAN4x5x_MCAN_EnableProtectedRegisters()** and **TCAN4x5x_MCAN_DisableProtectedRegisters()** be used to lock the registers after configuration
+
+         :param
+            *MRAMConfig is a pointer of a **TCAN4x5x_MRAM_Config** struct containing the desired MRAM configuration
+         
+         :return
+            true if successful, otherwise return false
+
+        Args:
+            MRAMConfiguration (_type_): _description_
+        """
         pass
 
     def TCAN4x5x_MCAN_DisableProtectedRegisters(self):
+        """Disable Protected MCAN Registers
+
+         Attempts to disable CCCR.CCE and CCCR.INIT to disallow writes to protected registers
+
+         :return
+            true if successfully enabled, otherwise return false
+        """
         pass
 
     def TCAN4x5x_MCAN_ConfigureInterruptEnable(self, mcan_ie):
+        """ Configures the MCAN interrupt enable register
+
+        Configures the MCAN interrupt enable register based on the passed **TCAN4x5x_MCAN_Interrupt_Enable** struct
+        Also enables MCAN interrupts out to the INT1 pin.
+
+        :param
+            *ie: is a pointer to a **TCAN4x5x_MCAN_Interrupt_Enable** struct containing the desired enabled interrupt bits
+
+        """
         pass
 
     def TCAN4x5x_MCAN_WriteSIDFilter(self, param, SID_ID):
+        """ Write MCAN Standard ID filter into MRAM
+
+         This function will write a standard ID MCAN filter to a specified filter element
+
+         :param
+            filterIndex is the SID filter index in MRAM to write to (starts at 0)
+         
+         :param
+            *filter is a pointer to a **TCAN4x5x_MCAN_SID_Filter** struct containing the MCAN filter information
+
+         :return
+            true if write was successful, false if not
+
+        """
         pass
 
     def TCAN4x5x_MCAN_WriteXIDFilter(self, param, XID_ID):
+        """Write MCAN Extended ID filter into MRAM
+
+         This function will write an extended ID MCAN filter to a specified filter element
+
+         :param
+            filterIndex is the XID filter index in MRAM to write to (starts at 0)
+         
+         :param
+            *filter is a pointer to a **TCAN4x5x_MCAN_XID_Filter** struct containing the MCAN filter information
+
+         @:return
+            true if write was successful, false if not
+            
+        """
         pass
 
     def TCAN4x5x_Device_Configure(self, devConfig):
+        """ Configures the device mode and pin register
+
+         Configures the device mode and pin register based on the passed **TCAN4x5x_DEV_CONFIG** struct, but will mask out the reserved bits on a write
+
+         :param
+            *devCfg is a pointer to a **TCAN4x5x_DEV_CONFIG** struct containing the desired device mode and pin register values
+
+         :return
+            true if configuration successfully done, false if not
+
+        """
         pass
 
     def TCAN4x5x_MCAN_ClearInterruptsAll(self):
+        """Clear all MCAN interrupts
+
+        Clears all MCAN interrupts
+        """
         pass
 
     def TCAN4x5x_Device_SetMode(self, TCAN4x5x_DEVICE_MODE):
+        """Sets the TCAN4x5x device mode
+
+         Sets the TCAN4x5x device mode based on the input **modeDefine** enum
+
+         :param
+            modeDefine is an **TCAN4x5x_Device_Mode_Enum** enum
+
+         :return
+            true if configuration successfully done, false if not
+
+        """
         pass
 
 
